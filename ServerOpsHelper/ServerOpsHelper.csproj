@@ -1,0 +1,70 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <!-- 声明 PerMonitorV2 DPI 感知：WebView2 需要它才能在高 DPI 下把网页视口对齐控件尺寸 -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- 应用图标：嵌入 EXE 的 Win32 资源，任务栏 / 资源管理器 / 快捷方式都用它。
+         图标由 Assets/make_icon.py 生成（改设计就改那个脚本再跑一次）。 -->
+    <ApplicationIcon>Assets\appicon.ico</ApplicationIcon>
+    <!-- 发布时只带中文与英文资源：否则 self-contained 包里会塞进 70 多个语言的资源目录，白白多出几十 MB -->
+    <SatelliteResourceLanguages>zh-Hans;en</SatelliteResourceLanguages>
+    <!-- 打包便携版时的标识信息 -->
+    <Product>服务器运维助手</Product>
+    <AssemblyTitle>服务器运维助手</AssemblyTitle>
+    <Version>1.11.0</Version>
+    <FileVersion>1.11.0.0</FileVersion>
+    <AssemblyVersion>1.11.0.0</AssemblyVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 图标也作为 WPF 资源打包，供窗口的 Icon 属性用 pack URI 引用 -->
+    <Resource Include="Assets\appicon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 探针要直接驱动 MCP 协议核心与 HTTP 传输（它们不是公开 API，也不该是） -->
+    <InternalsVisibleTo Include="Probe" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4078.44" />
+    <PackageReference Include="ModernWpfUI" Version="0.9.6" />
+    <PackageReference Include="SSH.NET" Version="2025.1.0" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.10" />
+    <!-- FRP 管理的配置解析：与 FrpManager 用同一套 TOML 读写，保证两边写出来的配置一致 -->
+    <PackageReference Include="Tomlyn" Version="0.17.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 面向使用者的说明，跟着 build / publish 一起出去：
+         之前是手工往 publish 目录塞的，一旦重新发布就丢了（打包安装包时才发现）。
+         声明成工程项后，便携包与安装包里一定会带上它。 -->
+    <None Update="使用说明.txt"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SSH 终端的前端资源（xterm.js + fit 插件 + 页面），跟着 build / publish 一起出去。
+         WebView2 用虚拟主机名 terminal.appassets.local 映射到这个目录加载，
+         全部本地文件、离线可用 —— 不引 CDN，桌面软件不能假设有网。 -->
+    <None Update="TerminalAssets\**\*"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- frp 的 frpc.exe / frps.exe **刻意不随包分发**（两者 36MB，占安装包一半体积）。
+         它属于"按需组件"：第一次打开 FRP 页点「安装 / 切到稳定版」即可自动下载，
+         装到 %APPDATA%\FrpManager\frp\windows-amd64（FrpInstaller.ResolveTargetDir）。
+         开发机想免下载，可把二进制放进
+         %LOCALAPPDATA%\ServerOpsHelper\components\frp\win-x64\，自动定位会认这个位置。 -->
+    <None Remove="frp\**\*" />
+  </ItemGroup>
+
+</Project>

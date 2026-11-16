@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    OpsHelper 的验证探针。
+    它是这个项目的安全网：XAML 的坑（StaticResource 缺失、图标名非法、pack URI 解析不到）
+    都是编译期全绿、运行期才炸，沙箱里又点不了界面，只能靠探针把界面真加载一遍。
+
+    ⚠️ 为什么放在工作区里而不是 %TEMP%：2026-09-20 系统清理临时目录，把整套探针 + 构建包装器
+    全删了（连带一次"构建通过"其实是假绿）。放这里就不会再丢。
+
+    跑法（注意 XML 注释里不能出现连续两个减号，所以参数只写个大概）：
+        用 dotbuild 包装器 build 本目录，然后运行 bin/Debug/net9.0-windows/Probe.exe
+        （包装器在 ~/.workbuddy/tools/dotbuild.py，详见技能 dotnet-wpf-windows-sandbox）
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Probe</AssemblyName>
+    <RootNamespace>Probe</RootNamespace>
+    <StartupObject>Probe.Program</StartupObject>
+    <!-- 探针不是应用，别去匹配 ServerOpsHelper 的 ApplicationDefinition -->
+    <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+    <ApplicationManifest>..\ServerOpsHelper\app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ServerOpsHelper\ServerOpsHelper.csproj" />
+  </ItemGroup>
+
+</Project>

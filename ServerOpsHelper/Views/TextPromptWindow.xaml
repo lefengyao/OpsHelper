@@ -1,0 +1,44 @@
+<Window x:Class="ServerOpsHelper.Views.TextPromptWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="输入"
+        Icon="pack://application:,,,/ServerOpsHelper;component/Assets/appicon.ico"
+        Width="460"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
+        Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}">
+
+    <!-- 同样是独立窗口：见 CredentialCaptureWindow 里关于 HwndHost 遮挡的说明 -->
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="TitleTextBlock"
+                   Grid.Row="0"
+                   Style="{StaticResource SubtitleTextBlockStyle}"
+                   TextWrapping="Wrap" />
+
+        <TextBox x:Name="InputTextBox"
+                 Grid.Row="1"
+                 Margin="0,14,0,0"
+                 VerticalContentAlignment="Center" />
+
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,20,0,0">
+            <Button Content="取消"
+                    Margin="0,0,8,0"
+                    Click="Cancel_Click" />
+            <Button Content="确定"
+                    Style="{StaticResource AccentButtonStyle}"
+                    Click="Ok_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

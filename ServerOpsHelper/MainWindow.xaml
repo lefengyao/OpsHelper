@@ -1,0 +1,140 @@
+<Window x:Class="ServerOpsHelper.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        xmlns:views="clr-namespace:ServerOpsHelper.Views"
+        Title="服务器运维助手"
+        Icon="pack://application:,,,/ServerOpsHelper;component/Assets/appicon.ico"
+        Width="1120"
+        Height="700"
+        MinWidth="960"
+        MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
+        Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}">
+
+    <!--
+        侧边栏直接用 NavigationView 承载整个窗口。
+        原来的写法是「固定 260 宽的列 + NavigationView」：NavigationView 收起面板时只会把内部面板压到
+        48px（只留图标），外面那一列仍是 260，于是左边留出一条空白 —— 看起来就是"导航栏不会变窄"。
+        让 NavigationView 当根元素后，面板开合由它自己驱动，内容区会跟着伸缩。
+        顺带关掉它自带的英文「Settings」项：那是 NavigationView 内置的，本项目没做对应处理，纯属多余。
+    -->
+    <ui:NavigationView x:Name="NavView"
+                       IsPaneOpen="True"
+                       OpenPaneLength="260"
+                       PaneDisplayMode="Left"
+                       IsBackButtonVisible="Collapsed"
+                       IsSettingsVisible="False"
+                       ItemInvoked="NavView_ItemInvoked">
+
+        <ui:NavigationView.MenuItems>
+            <ui:NavigationViewItem Content="服务器列表"
+                                   Tag="Servers"
+                                   Icon="Home" />
+            <ui:NavigationViewItem Content="常用链接"
+                                   Tag="Bookmarks"
+                                   Icon="Bookmarks" />
+            <ui:NavigationViewItem Content="访问记录"
+                                   Tag="History">
+                <!-- 用 FontIcon 直接给字形码：Symbol 枚举里没有合适的历史图标，
+                     写死字形码不会因为枚举名不存在而在加载期抛 XamlParseException -->
+                <ui:NavigationViewItem.Icon>
+                    <ui:FontIcon Glyph="&#xE81C;" />
+                </ui:NavigationViewItem.Icon>
+            </ui:NavigationViewItem>
+            <ui:NavigationViewItem Content="密码箱"
+                                   Tag="Vault"
+                                   Icon="Permissions" />
+            <ui:NavigationViewItem Content="FRP 穿透"
+                                   Tag="Frp"
+                                   Icon="Share" />
+            <ui:NavigationViewItem Content="Web 控制台"
+                                   Tag="WebConsole"
+                                   Icon="World" />
+            <ui:NavigationViewItem Content="系统设置"
+                                   Tag="Settings"
+                                   Icon="Setting" />
+        </ui:NavigationView.MenuItems>
+
+        <ui:NavigationView.FooterMenuItems>
+            <ui:NavigationViewItem Content="重启服务"
+                                   Tag="Restart"
+                                   Icon="Refresh" />
+        </ui:NavigationView.FooterMenuItems>
+
+        <!-- 侧边栏底部的「最近访问」：本次打开应用后访问过的网页 + 最近的历史。
+             点一条就直接切到右侧常驻的浏览器打开它，不用回控制台重新输地址。
+             面板收起（只剩图标条）时整块隐藏，否则会挤在一起。 -->
+        <ui:NavigationView.PaneFooter>
+            <StackPanel Margin="4,10,4,10"
+                        Visibility="{Binding IsPaneOpen, ElementName=NavView, Converter={StaticResource BoolToVisibility}}">
+
+                <!-- 一条淡分隔线，和上面的导航菜单区分开 -->
+                <Border Height="1"
+                        Margin="8,0,8,8"
+                        Background="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+
+                <TextBlock Text="最近访问"
+                           Margin="8,0,0,6"
+                           FontSize="12"
+                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+
+                <ItemsControl x:Name="RecentVisitsList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource PaneLinkButtonStyle}"
+                                    Tag="{Binding}"
+                                    Click="RecentVisitButton_Click"
+                                    ToolTip="{Binding Subtitle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding Title}"
+                                               TextTrimming="CharacterEllipsis" />
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding Badge}"
+                                               Margin="6,0,0,0"
+                                               FontSize="10"
+                                               VerticalAlignment="Center"
+                                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock x:Name="RecentEmptyHint"
+                           Text="打开过的网页会出现在这里"
+                           Margin="8,2,0,0"
+                           FontSize="11"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" />
+            </StackPanel>
+        </ui:NavigationView.PaneFooter>
+
+        <!-- 右侧主内容区 -->
+        <ui:NavigationView.Content>
+            <Grid Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+
+                <!-- 各功能页 -->
+                <Frame x:Name="MainFrame"
+                       NavigationUIVisibility="Hidden" />
+
+                <!--
+                    内置网页浏览器是**常驻**的：切到别的功能页时只是把它折叠起来，
+                    实例与 WebView2 都不销毁，切回来网页还在原处、不用重新输地址。
+                    Background 必须显式给：Page 默认背景透明，不给会透出下面的 Frame。
+                -->
+                <views:WebConsolePage x:Name="ConsoleHost"
+                                      Visibility="Collapsed"
+                                      Background="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+            </Grid>
+        </ui:NavigationView.Content>
+    </ui:NavigationView>
+</Window>

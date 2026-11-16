@@ -1,0 +1,1111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 本文件由 build_installer.py 自动生成，请不要手工改；重跑脚本即可刷新 -->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Directory Id="D_TerminalAssets" Name="TerminalAssets" />
+      <Directory Id="D_runtimes" Name="runtimes">
+        <Directory Id="D_runtimes_win_x64" Name="win-x64">
+          <Directory Id="D_runtimes_win_x64_native" Name="native" />
+        </Directory>
+      </Directory>
+      <Directory Id="D_zh_Hans" Name="zh-Hans" />
+    </DirectoryRef>
+  </Fragment>
+  <Fragment>
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Component Id="C_Accessibility.dll" Guid="{DCE4821D-6F5D-5920-BD1F-8A5DCF0E88CA}">
+        <File Id="F_Accessibility.dll" Source="$(PublishDir)Accessibility.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Accessibility.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_BouncyCastle.Cryptography.dll" Guid="{B8E6E22D-E4B3-54CF-800E-36D12C81524D}">
+        <File Id="F_BouncyCastle.Cryptography.dll" Source="$(PublishDir)BouncyCastle.Cryptography.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_BouncyCastle.Cryptography.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_D3DCompiler_47_cor3.dll" Guid="{1F7221B1-D557-54D0-9854-FA3E683DE295}">
+        <File Id="F_D3DCompiler_47_cor3.dll" Source="$(PublishDir)D3DCompiler_47_cor3.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_D3DCompiler_47_cor3.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_DirectWriteForwarder.dll" Guid="{2C1023B6-C0B1-5C5C-BCBF-08B625C662E4}">
+        <File Id="F_DirectWriteForwarder.dll" Source="$(PublishDir)DirectWriteForwarder.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_DirectWriteForwarder.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.CSharp.dll" Guid="{147B562D-042B-5DD7-BFF7-E533E39D6BC0}">
+        <File Id="F_Microsoft.CSharp.dll" Source="$(PublishDir)Microsoft.CSharp.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.CSharp.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.DiaSymReader.Native.amd64.dll" Guid="{39D14D9D-E4ED-5A7E-A8E4-77775438FAC0}">
+        <File Id="F_Microsoft.DiaSymReader.Native.amd64.dll" Source="$(PublishDir)Microsoft.DiaSymReader.Native.amd64.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.DiaSymReader.Native.amd64.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.Extensions.DependencyInjection.Abstractions.dll" Guid="{527349FE-E212-54C0-B871-822375D42DCD}">
+        <File Id="F_Microsoft.Extensions.DependencyInjection.Abstractions.dll" Source="$(PublishDir)Microsoft.Extensions.DependencyInjection.Abstractions.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.Extensions.DependencyInjection.Abstractions.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.Extensions.Logging.Abstractions.dll" Guid="{4B7B98BA-CEDC-5A17-822F-C5CC1B756B63}">
+        <File Id="F_Microsoft.Extensions.Logging.Abstractions.dll" Source="$(PublishDir)Microsoft.Extensions.Logging.Abstractions.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.Extensions.Logging.Abstractions.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.VisualBasic.Core.dll" Guid="{0477BD52-87F0-5FB4-9B09-61F61A2D01C8}">
+        <File Id="F_Microsoft.VisualBasic.Core.dll" Source="$(PublishDir)Microsoft.VisualBasic.Core.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.VisualBasic.Core.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.VisualBasic.dll" Guid="{1E13ACB7-59B9-5879-9FB0-DA3CDD09E5CA}">
+        <File Id="F_Microsoft.VisualBasic.dll" Source="$(PublishDir)Microsoft.VisualBasic.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.VisualBasic.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.Web.WebView2.Core.dll" Guid="{B07A9970-4A67-54E6-831C-ACAA516A03EF}">
+        <File Id="F_Microsoft.Web.WebView2.Core.dll" Source="$(PublishDir)Microsoft.Web.WebView2.Core.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.Web.WebView2.Core.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.Web.WebView2.Core.xml" Guid="{5AF7D5DD-1234-54A1-A530-41FF216229D7}">
+        <File Id="F_Microsoft.Web.WebView2.Core.xml" Source="$(PublishDir)Microsoft.Web.WebView2.Core.xml" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.Web.WebView2.Core.xml" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.Web.WebView2.WinForms.dll" Guid="{CC638587-ACC9-505C-94A6-3BFEA130C139}">
+        <File Id="F_Microsoft.Web.WebView2.WinForms.dll" Source="$(PublishDir)Microsoft.Web.WebView2.WinForms.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.Web.WebView2.WinForms.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.Web.WebView2.WinForms.xml" Guid="{B5C3C440-6B79-55FD-A081-7B4E6D8D076C}">
+        <File Id="F_Microsoft.Web.WebView2.WinForms.xml" Source="$(PublishDir)Microsoft.Web.WebView2.WinForms.xml" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.Web.WebView2.WinForms.xml" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.Web.WebView2.Wpf.dll" Guid="{7A8B1314-22BC-5A79-871B-527F0BB47381}">
+        <File Id="F_Microsoft.Web.WebView2.Wpf.dll" Source="$(PublishDir)Microsoft.Web.WebView2.Wpf.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.Web.WebView2.Wpf.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.Web.WebView2.Wpf.xml" Guid="{6A5E78A0-17DF-591B-91C0-7AF4AAAFADF5}">
+        <File Id="F_Microsoft.Web.WebView2.Wpf.xml" Source="$(PublishDir)Microsoft.Web.WebView2.Wpf.xml" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.Web.WebView2.Wpf.xml" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.Win32.Primitives.dll" Guid="{AAE7CE73-854C-517E-8987-E0B9DC858EF6}">
+        <File Id="F_Microsoft.Win32.Primitives.dll" Source="$(PublishDir)Microsoft.Win32.Primitives.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.Win32.Primitives.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.Win32.Registry.AccessControl.dll" Guid="{155B330A-137A-5032-964F-C50F2883CCC8}">
+        <File Id="F_Microsoft.Win32.Registry.AccessControl.dll" Source="$(PublishDir)Microsoft.Win32.Registry.AccessControl.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.Win32.Registry.AccessControl.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.Win32.Registry.dll" Guid="{1CA8C266-19C9-5EC3-B69C-C33EA7D15A6A}">
+        <File Id="F_Microsoft.Win32.Registry.dll" Source="$(PublishDir)Microsoft.Win32.Registry.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.Win32.Registry.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Microsoft.Win32.SystemEvents.dll" Guid="{C763481F-E1EA-58BA-83ED-891C05022EA6}">
+        <File Id="F_Microsoft.Win32.SystemEvents.dll" Source="$(PublishDir)Microsoft.Win32.SystemEvents.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Microsoft.Win32.SystemEvents.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_ModernWpf.Controls.dll" Guid="{DD4F7420-F33E-5EC1-9891-CEE4D0A81FDE}">
+        <File Id="F_ModernWpf.Controls.dll" Source="$(PublishDir)ModernWpf.Controls.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_ModernWpf.Controls.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_ModernWpf.dll" Guid="{492F0B46-26A7-5333-9386-94623815B839}">
+        <File Id="F_ModernWpf.dll" Source="$(PublishDir)ModernWpf.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_ModernWpf.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PenImc_cor3.dll" Guid="{A1F5A08B-8251-526F-918C-A608D0B2EA23}">
+        <File Id="F_PenImc_cor3.dll" Source="$(PublishDir)PenImc_cor3.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PenImc_cor3.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationCore.dll" Guid="{5C103CF4-27FB-5F84-8BC0-E3D2803DF18D}">
+        <File Id="F_PresentationCore.dll" Source="$(PublishDir)PresentationCore.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationCore.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationFramework_SystemCore.dll" Guid="{4457FB5E-F090-5C98-B408-38C331428BDC}">
+        <File Id="F_PresentationFramework_SystemCore.dll" Source="$(PublishDir)PresentationFramework-SystemCore.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationFramework_SystemCore.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationFramework_SystemData.dll" Guid="{60EEF66E-57A6-5582-A95A-9C9634773AF6}">
+        <File Id="F_PresentationFramework_SystemData.dll" Source="$(PublishDir)PresentationFramework-SystemData.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationFramework_SystemData.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationFramework_SystemDrawing.dll" Guid="{02E481D4-0BC4-5767-B7B7-30FED5BADE80}">
+        <File Id="F_PresentationFramework_SystemDrawing.dll" Source="$(PublishDir)PresentationFramework-SystemDrawing.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationFramework_SystemDrawing.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationFramework_SystemXml.dll" Guid="{2B4F9861-0C93-5438-8A72-DBEB11FCA6F9}">
+        <File Id="F_PresentationFramework_SystemXml.dll" Source="$(PublishDir)PresentationFramework-SystemXml.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationFramework_SystemXml.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationFramework_SystemXmlLinq.dll" Guid="{4E35CE78-EC85-5EC1-A8E9-429951C39D93}">
+        <File Id="F_PresentationFramework_SystemXmlLinq.dll" Source="$(PublishDir)PresentationFramework-SystemXmlLinq.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationFramework_SystemXmlLinq.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationFramework.Aero.dll" Guid="{BD188033-CCC8-5B94-9D68-7D9C1C037728}">
+        <File Id="F_PresentationFramework.Aero.dll" Source="$(PublishDir)PresentationFramework.Aero.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationFramework.Aero.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationFramework.Aero2.dll" Guid="{35D10D22-5F68-5B68-A725-4FC2C41B3FE6}">
+        <File Id="F_PresentationFramework.Aero2.dll" Source="$(PublishDir)PresentationFramework.Aero2.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationFramework.Aero2.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationFramework.AeroLite.dll" Guid="{DE657950-5CE4-5F51-B671-8D2D36958325}">
+        <File Id="F_PresentationFramework.AeroLite.dll" Source="$(PublishDir)PresentationFramework.AeroLite.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationFramework.AeroLite.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationFramework.Classic.dll" Guid="{CC8508B6-76E7-54F1-9363-C1E9CA58D7BE}">
+        <File Id="F_PresentationFramework.Classic.dll" Source="$(PublishDir)PresentationFramework.Classic.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationFramework.Classic.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationFramework.Fluent.dll" Guid="{5143A65B-5C24-51F2-9A55-7555F941F627}">
+        <File Id="F_PresentationFramework.Fluent.dll" Source="$(PublishDir)PresentationFramework.Fluent.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationFramework.Fluent.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationFramework.Luna.dll" Guid="{459557A7-3B9C-57B9-96A8-B12F733C2FE6}">
+        <File Id="F_PresentationFramework.Luna.dll" Source="$(PublishDir)PresentationFramework.Luna.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationFramework.Luna.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationFramework.Royale.dll" Guid="{22B3E8A5-2922-521B-B14C-8E9BC04036C1}">
+        <File Id="F_PresentationFramework.Royale.dll" Source="$(PublishDir)PresentationFramework.Royale.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationFramework.Royale.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationFramework.dll" Guid="{BE5F400D-CD07-5841-8F87-DD2CBA982A80}">
+        <File Id="F_PresentationFramework.dll" Source="$(PublishDir)PresentationFramework.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationFramework.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationNative_cor3.dll" Guid="{F752C92F-7FB7-5E3E-BFDD-EB646CECE9A8}">
+        <File Id="F_PresentationNative_cor3.dll" Source="$(PublishDir)PresentationNative_cor3.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationNative_cor3.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_PresentationUI.dll" Guid="{AB792A74-E5F5-5574-AFB4-AADF9C3F86B7}">
+        <File Id="F_PresentationUI.dll" Source="$(PublishDir)PresentationUI.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_PresentationUI.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_ReachFramework.dll" Guid="{EF6D5ADF-17E7-55E1-9F15-4A925579493D}">
+        <File Id="F_ReachFramework.dll" Source="$(PublishDir)ReachFramework.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_ReachFramework.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Renci.SshNet.dll" Guid="{8260F984-79A3-5137-934D-5EDC5B28E734}">
+        <File Id="F_Renci.SshNet.dll" Source="$(PublishDir)Renci.SshNet.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Renci.SshNet.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_ServerOpsHelper.deps.json" Guid="{4F07238A-F408-597B-9562-25C3D6E3BDEA}">
+        <File Id="F_ServerOpsHelper.deps.json" Source="$(PublishDir)ServerOpsHelper.deps.json" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_ServerOpsHelper.deps.json" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_ServerOpsHelper.dll" Guid="{3639DF43-5B46-561E-AEE2-4F2C10E497A2}">
+        <File Id="F_ServerOpsHelper.dll" Source="$(PublishDir)ServerOpsHelper.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_ServerOpsHelper.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_ServerOpsHelper.runtimeconfig.json" Guid="{351D4F61-7561-586E-B24D-BBAA6FE77F01}">
+        <File Id="F_ServerOpsHelper.runtimeconfig.json" Source="$(PublishDir)ServerOpsHelper.runtimeconfig.json" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_ServerOpsHelper.runtimeconfig.json" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.AppContext.dll" Guid="{F1A37D90-B0AD-5B5B-AC7D-5B791A4002D7}">
+        <File Id="F_System.AppContext.dll" Source="$(PublishDir)System.AppContext.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.AppContext.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Buffers.dll" Guid="{627409F8-71FC-55AD-A217-3649E4D5B239}">
+        <File Id="F_System.Buffers.dll" Source="$(PublishDir)System.Buffers.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Buffers.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.CodeDom.dll" Guid="{31DADF2F-C79F-5018-BFBE-EB0CE1401115}">
+        <File Id="F_System.CodeDom.dll" Source="$(PublishDir)System.CodeDom.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.CodeDom.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Collections.Concurrent.dll" Guid="{8351DFD9-F8E5-5110-9AC6-C7AE0AD48776}">
+        <File Id="F_System.Collections.Concurrent.dll" Source="$(PublishDir)System.Collections.Concurrent.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Collections.Concurrent.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Collections.Immutable.dll" Guid="{5C569E4C-13AB-551F-9CBB-0120B81C94E7}">
+        <File Id="F_System.Collections.Immutable.dll" Source="$(PublishDir)System.Collections.Immutable.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Collections.Immutable.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Collections.NonGeneric.dll" Guid="{77ECC601-4270-5D75-B32E-85B1CB703D61}">
+        <File Id="F_System.Collections.NonGeneric.dll" Source="$(PublishDir)System.Collections.NonGeneric.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Collections.NonGeneric.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Collections.Specialized.dll" Guid="{BB8ED3C6-D02E-5F61-A6FB-A83583A8049D}">
+        <File Id="F_System.Collections.Specialized.dll" Source="$(PublishDir)System.Collections.Specialized.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Collections.Specialized.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Collections.dll" Guid="{6302C532-472D-5200-8874-2022A40068B1}">
+        <File Id="F_System.Collections.dll" Source="$(PublishDir)System.Collections.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Collections.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.ComponentModel.Annotations.dll" Guid="{14B1A433-9D10-5A5F-94FB-4164B415C669}">
+        <File Id="F_System.ComponentModel.Annotations.dll" Source="$(PublishDir)System.ComponentModel.Annotations.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.ComponentModel.Annotations.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.ComponentModel.DataAnnotations.dll" Guid="{1158569B-4937-57A7-96BC-981051EA2020}">
+        <File Id="F_System.ComponentModel.DataAnnotations.dll" Source="$(PublishDir)System.ComponentModel.DataAnnotations.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.ComponentModel.DataAnnotations.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.ComponentModel.EventBasedAsync.dll" Guid="{D97943C8-33E6-580D-8A74-1F604281BA69}">
+        <File Id="F_System.ComponentModel.EventBasedAsync.dll" Source="$(PublishDir)System.ComponentModel.EventBasedAsync.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.ComponentModel.EventBasedAsync.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.ComponentModel.Primitives.dll" Guid="{E4E5E687-5980-5645-BFA5-3F6B598A8A9E}">
+        <File Id="F_System.ComponentModel.Primitives.dll" Source="$(PublishDir)System.ComponentModel.Primitives.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.ComponentModel.Primitives.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.ComponentModel.TypeConverter.dll" Guid="{B9EDC82A-8146-583D-AC8B-44F39CEDBC00}">
+        <File Id="F_System.ComponentModel.TypeConverter.dll" Source="$(PublishDir)System.ComponentModel.TypeConverter.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.ComponentModel.TypeConverter.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.ComponentModel.dll" Guid="{3EA45BD9-9093-586E-9A46-DB9A3544136A}">
+        <File Id="F_System.ComponentModel.dll" Source="$(PublishDir)System.ComponentModel.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.ComponentModel.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Configuration.ConfigurationManager.dll" Guid="{B038DFBF-2234-5D02-B424-6D5BC43419F7}">
+        <File Id="F_System.Configuration.ConfigurationManager.dll" Source="$(PublishDir)System.Configuration.ConfigurationManager.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Configuration.ConfigurationManager.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Configuration.dll" Guid="{F0B5FD1E-32DC-59F8-8149-DE5A9B7717D0}">
+        <File Id="F_System.Configuration.dll" Source="$(PublishDir)System.Configuration.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Configuration.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Console.dll" Guid="{9236C0A5-66F4-500E-89E7-1B9A93A09406}">
+        <File Id="F_System.Console.dll" Source="$(PublishDir)System.Console.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Console.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Core.dll" Guid="{A2311DB3-4978-5F5B-982B-A21FE4614BC9}">
+        <File Id="F_System.Core.dll" Source="$(PublishDir)System.Core.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Core.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Data.Common.dll" Guid="{6A704315-91AA-5CA3-8BC8-E08C494070D5}">
+        <File Id="F_System.Data.Common.dll" Source="$(PublishDir)System.Data.Common.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Data.Common.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Data.DataSetExtensions.dll" Guid="{BD09FBC0-A577-591D-B175-0631DD8F3D5E}">
+        <File Id="F_System.Data.DataSetExtensions.dll" Source="$(PublishDir)System.Data.DataSetExtensions.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Data.DataSetExtensions.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Data.dll" Guid="{E422DAD3-6383-5500-A6DB-74E56881AA96}">
+        <File Id="F_System.Data.dll" Source="$(PublishDir)System.Data.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Data.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Diagnostics.Contracts.dll" Guid="{A247EDB7-198E-54EB-80C8-3F93E5F42E71}">
+        <File Id="F_System.Diagnostics.Contracts.dll" Source="$(PublishDir)System.Diagnostics.Contracts.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Diagnostics.Contracts.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Diagnostics.Debug.dll" Guid="{4D5FD5AB-BA37-5786-AD58-5A6E1226499C}">
+        <File Id="F_System.Diagnostics.Debug.dll" Source="$(PublishDir)System.Diagnostics.Debug.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Diagnostics.Debug.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Diagnostics.DiagnosticSource.dll" Guid="{C55C4BCA-A639-52E2-BD73-6DD2894C30FF}">
+        <File Id="F_System.Diagnostics.DiagnosticSource.dll" Source="$(PublishDir)System.Diagnostics.DiagnosticSource.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Diagnostics.DiagnosticSource.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Diagnostics.EventLog.Messages.dll" Guid="{9F81E564-6043-5027-9884-1E34716E5E0A}">
+        <File Id="F_System.Diagnostics.EventLog.Messages.dll" Source="$(PublishDir)System.Diagnostics.EventLog.Messages.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Diagnostics.EventLog.Messages.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Diagnostics.EventLog.dll" Guid="{B110FB74-C387-5A7F-867C-968ED569846B}">
+        <File Id="F_System.Diagnostics.EventLog.dll" Source="$(PublishDir)System.Diagnostics.EventLog.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Diagnostics.EventLog.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Diagnostics.FileVersionInfo.dll" Guid="{D340245A-D06F-598D-A378-778333AB77DF}">
+        <File Id="F_System.Diagnostics.FileVersionInfo.dll" Source="$(PublishDir)System.Diagnostics.FileVersionInfo.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Diagnostics.FileVersionInfo.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Diagnostics.PerformanceCounter.dll" Guid="{8C405C54-7E61-55B4-ADE8-2775BE909E31}">
+        <File Id="F_System.Diagnostics.PerformanceCounter.dll" Source="$(PublishDir)System.Diagnostics.PerformanceCounter.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Diagnostics.PerformanceCounter.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Diagnostics.Process.dll" Guid="{0B5644C6-5710-5AD5-80C6-5DCED0D3A954}">
+        <File Id="F_System.Diagnostics.Process.dll" Source="$(PublishDir)System.Diagnostics.Process.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Diagnostics.Process.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Diagnostics.StackTrace.dll" Guid="{55ADD3A5-30A5-531D-937A-0A3B429C13E4}">
+        <File Id="F_System.Diagnostics.StackTrace.dll" Source="$(PublishDir)System.Diagnostics.StackTrace.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Diagnostics.StackTrace.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Diagnostics.TextWriterTraceListener.dll" Guid="{7E3B780C-BA9C-5FC4-9CEF-97BA91D234BD}">
+        <File Id="F_System.Diagnostics.TextWriterTraceListener.dll" Source="$(PublishDir)System.Diagnostics.TextWriterTraceListener.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Diagnostics.TextWriterTraceListener.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Diagnostics.Tools.dll" Guid="{4F061ECB-5282-5AE6-96D2-65A2E67609B3}">
+        <File Id="F_System.Diagnostics.Tools.dll" Source="$(PublishDir)System.Diagnostics.Tools.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Diagnostics.Tools.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Diagnostics.TraceSource.dll" Guid="{477E3D79-B617-5965-B051-1159B0FFC7DC}">
+        <File Id="F_System.Diagnostics.TraceSource.dll" Source="$(PublishDir)System.Diagnostics.TraceSource.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Diagnostics.TraceSource.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Diagnostics.Tracing.dll" Guid="{256DB40B-6FF4-5108-A8AB-7BEC4A433E90}">
+        <File Id="F_System.Diagnostics.Tracing.dll" Source="$(PublishDir)System.Diagnostics.Tracing.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Diagnostics.Tracing.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.DirectoryServices.dll" Guid="{D5DEF954-7E5A-562E-B8FD-1F500530311D}">
+        <File Id="F_System.DirectoryServices.dll" Source="$(PublishDir)System.DirectoryServices.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.DirectoryServices.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Drawing.Primitives.dll" Guid="{A7448F6D-B828-5C87-A18F-EB9A6AE37D73}">
+        <File Id="F_System.Drawing.Primitives.dll" Source="$(PublishDir)System.Drawing.Primitives.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Drawing.Primitives.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Drawing.dll" Guid="{491DCA2F-C77C-5CF0-87B9-DBB2B244D398}">
+        <File Id="F_System.Drawing.dll" Source="$(PublishDir)System.Drawing.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Drawing.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Dynamic.Runtime.dll" Guid="{F7DE50E3-AC4D-57F0-9B6E-EA609D5B1479}">
+        <File Id="F_System.Dynamic.Runtime.dll" Source="$(PublishDir)System.Dynamic.Runtime.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Dynamic.Runtime.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Formats.Asn1.dll" Guid="{B2B8917E-5810-5BDB-8D1F-AFA967558A4E}">
+        <File Id="F_System.Formats.Asn1.dll" Source="$(PublishDir)System.Formats.Asn1.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Formats.Asn1.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Formats.Nrbf.dll" Guid="{3A37F5FA-9B65-5C11-92A9-E6E772B8E408}">
+        <File Id="F_System.Formats.Nrbf.dll" Source="$(PublishDir)System.Formats.Nrbf.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Formats.Nrbf.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Formats.Tar.dll" Guid="{9B3E60C5-41CC-5B65-BB23-55909D8AC231}">
+        <File Id="F_System.Formats.Tar.dll" Source="$(PublishDir)System.Formats.Tar.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Formats.Tar.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Globalization.Calendars.dll" Guid="{60B2FB5D-6920-5074-BD14-CC7CCE0C1B49}">
+        <File Id="F_System.Globalization.Calendars.dll" Source="$(PublishDir)System.Globalization.Calendars.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Globalization.Calendars.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Globalization.Extensions.dll" Guid="{4E23AB89-21FF-56FB-8E0D-460CBE66104C}">
+        <File Id="F_System.Globalization.Extensions.dll" Source="$(PublishDir)System.Globalization.Extensions.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Globalization.Extensions.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Globalization.dll" Guid="{7C5BDE4C-3488-5600-8B05-2607A3242278}">
+        <File Id="F_System.Globalization.dll" Source="$(PublishDir)System.Globalization.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Globalization.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.Compression.Brotli.dll" Guid="{81A5E321-EF87-5256-8E43-26BF6D04068F}">
+        <File Id="F_System.IO.Compression.Brotli.dll" Source="$(PublishDir)System.IO.Compression.Brotli.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.Compression.Brotli.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.Compression.FileSystem.dll" Guid="{8A19075A-8C83-5EA8-A8B3-858D477A49A8}">
+        <File Id="F_System.IO.Compression.FileSystem.dll" Source="$(PublishDir)System.IO.Compression.FileSystem.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.Compression.FileSystem.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.Compression.Native.dll" Guid="{B25B3121-9580-59B9-9896-B79F6C4A4721}">
+        <File Id="F_System.IO.Compression.Native.dll" Source="$(PublishDir)System.IO.Compression.Native.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.Compression.Native.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.Compression.ZipFile.dll" Guid="{011EADF1-6AEF-5871-8623-973F9DAA1568}">
+        <File Id="F_System.IO.Compression.ZipFile.dll" Source="$(PublishDir)System.IO.Compression.ZipFile.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.Compression.ZipFile.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.Compression.dll" Guid="{948A4800-193A-56DF-B2EB-AFAE5E0C4D9E}">
+        <File Id="F_System.IO.Compression.dll" Source="$(PublishDir)System.IO.Compression.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.Compression.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.FileSystem.AccessControl.dll" Guid="{534C2FBD-8216-595C-AFD1-600E2A6F6044}">
+        <File Id="F_System.IO.FileSystem.AccessControl.dll" Source="$(PublishDir)System.IO.FileSystem.AccessControl.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.FileSystem.AccessControl.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.FileSystem.DriveInfo.dll" Guid="{C74199B4-5B78-51E5-AAD1-E2D4EF239A74}">
+        <File Id="F_System.IO.FileSystem.DriveInfo.dll" Source="$(PublishDir)System.IO.FileSystem.DriveInfo.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.FileSystem.DriveInfo.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.FileSystem.Primitives.dll" Guid="{E8B27C8E-2E98-59F3-A4B6-EF657A146954}">
+        <File Id="F_System.IO.FileSystem.Primitives.dll" Source="$(PublishDir)System.IO.FileSystem.Primitives.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.FileSystem.Primitives.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.FileSystem.Watcher.dll" Guid="{88883897-4501-564C-BE9F-94963A2315B8}">
+        <File Id="F_System.IO.FileSystem.Watcher.dll" Source="$(PublishDir)System.IO.FileSystem.Watcher.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.FileSystem.Watcher.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.FileSystem.dll" Guid="{07DE5D59-8712-5CE1-A6BD-ADBA24CA6EA2}">
+        <File Id="F_System.IO.FileSystem.dll" Source="$(PublishDir)System.IO.FileSystem.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.FileSystem.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.IsolatedStorage.dll" Guid="{305214DA-5349-5C1A-974F-29E73871910F}">
+        <File Id="F_System.IO.IsolatedStorage.dll" Source="$(PublishDir)System.IO.IsolatedStorage.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.IsolatedStorage.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.MemoryMappedFiles.dll" Guid="{E312E659-71CF-546D-8E6F-40FDD1EC4E08}">
+        <File Id="F_System.IO.MemoryMappedFiles.dll" Source="$(PublishDir)System.IO.MemoryMappedFiles.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.MemoryMappedFiles.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.Packaging.dll" Guid="{4A2FF3C3-9413-54D8-8FE5-C5FFB454D943}">
+        <File Id="F_System.IO.Packaging.dll" Source="$(PublishDir)System.IO.Packaging.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.Packaging.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.Pipelines.dll" Guid="{2555883E-4598-5B24-AD31-BE4D4F2AA78A}">
+        <File Id="F_System.IO.Pipelines.dll" Source="$(PublishDir)System.IO.Pipelines.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.Pipelines.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.Pipes.AccessControl.dll" Guid="{E2D996CC-1280-5F2C-9C24-BB64564ED686}">
+        <File Id="F_System.IO.Pipes.AccessControl.dll" Source="$(PublishDir)System.IO.Pipes.AccessControl.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.Pipes.AccessControl.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.Pipes.dll" Guid="{460D910A-CE15-5776-9783-B4C406D93044}">
+        <File Id="F_System.IO.Pipes.dll" Source="$(PublishDir)System.IO.Pipes.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.Pipes.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.UnmanagedMemoryStream.dll" Guid="{6697418F-6075-5FF9-878D-B95085342986}">
+        <File Id="F_System.IO.UnmanagedMemoryStream.dll" Source="$(PublishDir)System.IO.UnmanagedMemoryStream.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.UnmanagedMemoryStream.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.IO.dll" Guid="{F25CA2CD-9276-513E-B6C2-0A3A8F2812A0}">
+        <File Id="F_System.IO.dll" Source="$(PublishDir)System.IO.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.IO.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Linq.Expressions.dll" Guid="{1AB8FE97-FF13-5022-95D7-65ACDA870F8B}">
+        <File Id="F_System.Linq.Expressions.dll" Source="$(PublishDir)System.Linq.Expressions.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Linq.Expressions.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Linq.Parallel.dll" Guid="{A9BED23C-2F44-5A5C-AD8A-8283258EC783}">
+        <File Id="F_System.Linq.Parallel.dll" Source="$(PublishDir)System.Linq.Parallel.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Linq.Parallel.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Linq.Queryable.dll" Guid="{8B92B7D3-09AC-534B-80E8-AB22C30FD872}">
+        <File Id="F_System.Linq.Queryable.dll" Source="$(PublishDir)System.Linq.Queryable.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Linq.Queryable.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Linq.dll" Guid="{E2B28B55-4F20-5CE3-B529-82D9597339B2}">
+        <File Id="F_System.Linq.dll" Source="$(PublishDir)System.Linq.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Linq.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Memory.dll" Guid="{2419D536-7F0E-585D-AAB8-F823415EBAA2}">
+        <File Id="F_System.Memory.dll" Source="$(PublishDir)System.Memory.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Memory.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.Http.Json.dll" Guid="{CF409862-9605-58E5-81CA-ECB6E20F8A9F}">
+        <File Id="F_System.Net.Http.Json.dll" Source="$(PublishDir)System.Net.Http.Json.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.Http.Json.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.Http.dll" Guid="{07556C81-8BA9-5131-BAE9-C0FBD19D5C80}">
+        <File Id="F_System.Net.Http.dll" Source="$(PublishDir)System.Net.Http.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.Http.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.HttpListener.dll" Guid="{144FE00C-96D4-5AD5-8E14-892DCB6FDA4B}">
+        <File Id="F_System.Net.HttpListener.dll" Source="$(PublishDir)System.Net.HttpListener.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.HttpListener.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.Mail.dll" Guid="{5C5DE38D-AB3A-59C1-865C-3D4B042EBF91}">
+        <File Id="F_System.Net.Mail.dll" Source="$(PublishDir)System.Net.Mail.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.Mail.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.NameResolution.dll" Guid="{4170C7AC-2FC5-5F82-BDAB-20D8674C1D04}">
+        <File Id="F_System.Net.NameResolution.dll" Source="$(PublishDir)System.Net.NameResolution.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.NameResolution.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.NetworkInformation.dll" Guid="{C3031E4E-A700-563D-A7AD-8D9931FBEC90}">
+        <File Id="F_System.Net.NetworkInformation.dll" Source="$(PublishDir)System.Net.NetworkInformation.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.NetworkInformation.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.Ping.dll" Guid="{3FE466B3-2C28-59B0-A9F5-E2E3EC7E40AA}">
+        <File Id="F_System.Net.Ping.dll" Source="$(PublishDir)System.Net.Ping.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.Ping.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.Primitives.dll" Guid="{576DCE94-1EF5-50FA-A0D5-D2684C24EE93}">
+        <File Id="F_System.Net.Primitives.dll" Source="$(PublishDir)System.Net.Primitives.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.Primitives.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.Quic.dll" Guid="{826AA41F-1A8D-54F9-B14C-9889CEDABC7E}">
+        <File Id="F_System.Net.Quic.dll" Source="$(PublishDir)System.Net.Quic.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.Quic.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.Requests.dll" Guid="{AAE5B22E-250B-5377-95B1-67E1EB3BEC07}">
+        <File Id="F_System.Net.Requests.dll" Source="$(PublishDir)System.Net.Requests.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.Requests.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.Security.dll" Guid="{D5831DD3-A9B1-5BB0-8B17-8AD8D97F38FE}">
+        <File Id="F_System.Net.Security.dll" Source="$(PublishDir)System.Net.Security.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.Security.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.ServicePoint.dll" Guid="{0093781B-4769-59CE-9783-8B3883F177F7}">
+        <File Id="F_System.Net.ServicePoint.dll" Source="$(PublishDir)System.Net.ServicePoint.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.ServicePoint.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.Sockets.dll" Guid="{DD0027D3-CB75-5DB1-8C7B-6BC5D94E2990}">
+        <File Id="F_System.Net.Sockets.dll" Source="$(PublishDir)System.Net.Sockets.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.Sockets.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.WebClient.dll" Guid="{3593EF32-51CF-543B-807E-F4D129C208B4}">
+        <File Id="F_System.Net.WebClient.dll" Source="$(PublishDir)System.Net.WebClient.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.WebClient.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.WebHeaderCollection.dll" Guid="{4218D283-E496-5099-BD25-13CAD502C61E}">
+        <File Id="F_System.Net.WebHeaderCollection.dll" Source="$(PublishDir)System.Net.WebHeaderCollection.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.WebHeaderCollection.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.WebProxy.dll" Guid="{0811E03F-2AA8-5CEC-8916-888EF72CB315}">
+        <File Id="F_System.Net.WebProxy.dll" Source="$(PublishDir)System.Net.WebProxy.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.WebProxy.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.WebSockets.Client.dll" Guid="{C9445F04-FFA5-5166-93F0-61466452BF35}">
+        <File Id="F_System.Net.WebSockets.Client.dll" Source="$(PublishDir)System.Net.WebSockets.Client.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.WebSockets.Client.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.WebSockets.dll" Guid="{33FA4832-6AF4-5656-AB70-205ADF675A20}">
+        <File Id="F_System.Net.WebSockets.dll" Source="$(PublishDir)System.Net.WebSockets.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.WebSockets.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Net.dll" Guid="{F16D44D6-3D3A-5C8F-BA6A-2C2FBC25C3A1}">
+        <File Id="F_System.Net.dll" Source="$(PublishDir)System.Net.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Net.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Numerics.Vectors.dll" Guid="{8D3E15CE-8DAF-55C4-8FAC-8CD52C590513}">
+        <File Id="F_System.Numerics.Vectors.dll" Source="$(PublishDir)System.Numerics.Vectors.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Numerics.Vectors.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Numerics.dll" Guid="{00A48FEF-B269-5F52-8620-C479F4F292D3}">
+        <File Id="F_System.Numerics.dll" Source="$(PublishDir)System.Numerics.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Numerics.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.ObjectModel.dll" Guid="{05663B49-8860-5A79-8313-3519047FC101}">
+        <File Id="F_System.ObjectModel.dll" Source="$(PublishDir)System.ObjectModel.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.ObjectModel.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Printing.dll" Guid="{FF832AB5-8BE1-5830-852F-F1049AB5019D}">
+        <File Id="F_System.Printing.dll" Source="$(PublishDir)System.Printing.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Printing.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Private.CoreLib.dll" Guid="{D9182516-63F7-50BD-A762-5494FE0ECD30}">
+        <File Id="F_System.Private.CoreLib.dll" Source="$(PublishDir)System.Private.CoreLib.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Private.CoreLib.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Private.DataContractSerialization.dll" Guid="{6BDC9A92-6A87-57AB-AD12-50AB40D098EF}">
+        <File Id="F_System.Private.DataContractSerialization.dll" Source="$(PublishDir)System.Private.DataContractSerialization.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Private.DataContractSerialization.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Private.Uri.dll" Guid="{E6907A1F-A264-58A1-A3FB-30F5E5F5E9CD}">
+        <File Id="F_System.Private.Uri.dll" Source="$(PublishDir)System.Private.Uri.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Private.Uri.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Private.Xml.Linq.dll" Guid="{4D9BEDD0-662D-515C-A631-115F742E6BF8}">
+        <File Id="F_System.Private.Xml.Linq.dll" Source="$(PublishDir)System.Private.Xml.Linq.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Private.Xml.Linq.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Private.Xml.dll" Guid="{05754A54-280B-5AD7-9B34-F1CFDA79006F}">
+        <File Id="F_System.Private.Xml.dll" Source="$(PublishDir)System.Private.Xml.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Private.Xml.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Reflection.DispatchProxy.dll" Guid="{2A55AAAE-4E53-577E-A798-3387595C636F}">
+        <File Id="F_System.Reflection.DispatchProxy.dll" Source="$(PublishDir)System.Reflection.DispatchProxy.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Reflection.DispatchProxy.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Reflection.Emit.ILGeneration.dll" Guid="{D17B4083-2321-53A6-AE47-74F25EBF8924}">
+        <File Id="F_System.Reflection.Emit.ILGeneration.dll" Source="$(PublishDir)System.Reflection.Emit.ILGeneration.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Reflection.Emit.ILGeneration.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Reflection.Emit.Lightweight.dll" Guid="{938E5001-FC7E-59A7-9445-E06E86DCB30C}">
+        <File Id="F_System.Reflection.Emit.Lightweight.dll" Source="$(PublishDir)System.Reflection.Emit.Lightweight.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Reflection.Emit.Lightweight.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Reflection.Emit.dll" Guid="{020F68C1-09CC-58F5-A587-18B935BBB253}">
+        <File Id="F_System.Reflection.Emit.dll" Source="$(PublishDir)System.Reflection.Emit.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Reflection.Emit.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Reflection.Extensions.dll" Guid="{A5A3748A-DA05-5A66-AA3A-132305DB6EA4}">
+        <File Id="F_System.Reflection.Extensions.dll" Source="$(PublishDir)System.Reflection.Extensions.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Reflection.Extensions.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Reflection.Metadata.dll" Guid="{478F11DB-37D4-510E-B38D-6D92972C3C4F}">
+        <File Id="F_System.Reflection.Metadata.dll" Source="$(PublishDir)System.Reflection.Metadata.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Reflection.Metadata.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Reflection.Primitives.dll" Guid="{93A287C4-C0AC-5042-A394-9AF1E43EB2DB}">
+        <File Id="F_System.Reflection.Primitives.dll" Source="$(PublishDir)System.Reflection.Primitives.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Reflection.Primitives.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Reflection.TypeExtensions.dll" Guid="{943640E3-525A-5044-BF6C-6DA7716208A8}">
+        <File Id="F_System.Reflection.TypeExtensions.dll" Source="$(PublishDir)System.Reflection.TypeExtensions.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Reflection.TypeExtensions.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Reflection.dll" Guid="{C12ACB9B-8CE8-53D5-8456-950F651621E2}">
+        <File Id="F_System.Reflection.dll" Source="$(PublishDir)System.Reflection.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Reflection.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Resources.Extensions.dll" Guid="{5F5FAB32-D494-5D2E-B8D9-5CA1464DFAFC}">
+        <File Id="F_System.Resources.Extensions.dll" Source="$(PublishDir)System.Resources.Extensions.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Resources.Extensions.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Resources.Reader.dll" Guid="{02E93A81-C0C7-5724-81DC-A83DA8EB18B0}">
+        <File Id="F_System.Resources.Reader.dll" Source="$(PublishDir)System.Resources.Reader.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Resources.Reader.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Resources.ResourceManager.dll" Guid="{CEDCCD81-F860-57F1-B36A-1DF787213BAA}">
+        <File Id="F_System.Resources.ResourceManager.dll" Source="$(PublishDir)System.Resources.ResourceManager.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Resources.ResourceManager.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Resources.Writer.dll" Guid="{07E9A671-F915-5284-BE5A-3CA2354C82C3}">
+        <File Id="F_System.Resources.Writer.dll" Source="$(PublishDir)System.Resources.Writer.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Resources.Writer.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.CompilerServices.Unsafe.dll" Guid="{7422BB2D-4C62-5B24-AAE7-2F13D904C70B}">
+        <File Id="F_System.Runtime.CompilerServices.Unsafe.dll" Source="$(PublishDir)System.Runtime.CompilerServices.Unsafe.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.CompilerServices.Unsafe.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.CompilerServices.VisualC.dll" Guid="{B752C286-6E64-5EF3-9675-750553CBC2AC}">
+        <File Id="F_System.Runtime.CompilerServices.VisualC.dll" Source="$(PublishDir)System.Runtime.CompilerServices.VisualC.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.CompilerServices.VisualC.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.Extensions.dll" Guid="{F1533104-5A5F-5715-BFC8-6CB58E6005A2}">
+        <File Id="F_System.Runtime.Extensions.dll" Source="$(PublishDir)System.Runtime.Extensions.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.Extensions.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.Handles.dll" Guid="{60581090-CB0C-51E9-BEEC-B5254E2B484B}">
+        <File Id="F_System.Runtime.Handles.dll" Source="$(PublishDir)System.Runtime.Handles.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.Handles.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.InteropServices.JavaScript.dll" Guid="{73C6E732-0CE9-5953-B662-4759355847C0}">
+        <File Id="F_System.Runtime.InteropServices.JavaScript.dll" Source="$(PublishDir)System.Runtime.InteropServices.JavaScript.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.InteropServices.JavaScript.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.InteropServices.RuntimeInformation.dll" Guid="{5325E163-92AE-5362-9BED-D17198476A29}">
+        <File Id="F_System.Runtime.InteropServices.RuntimeInformation.dll" Source="$(PublishDir)System.Runtime.InteropServices.RuntimeInformation.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.InteropServices.RuntimeInformation.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.InteropServices.dll" Guid="{C1F43B4B-839E-57C0-B7C3-785DB71969E7}">
+        <File Id="F_System.Runtime.InteropServices.dll" Source="$(PublishDir)System.Runtime.InteropServices.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.InteropServices.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.Intrinsics.dll" Guid="{67DF4296-DB01-562D-89F1-BB99A0B23CFB}">
+        <File Id="F_System.Runtime.Intrinsics.dll" Source="$(PublishDir)System.Runtime.Intrinsics.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.Intrinsics.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.Loader.dll" Guid="{5B45AE4A-7294-5608-BAE4-7187F299BF1D}">
+        <File Id="F_System.Runtime.Loader.dll" Source="$(PublishDir)System.Runtime.Loader.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.Loader.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.Numerics.dll" Guid="{E1917A17-BE29-5B93-A9F6-9CE02E19BB47}">
+        <File Id="F_System.Runtime.Numerics.dll" Source="$(PublishDir)System.Runtime.Numerics.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.Numerics.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.Serialization.Formatters.dll" Guid="{D4A8A5AA-7276-5716-BEB1-364CDB0B336E}">
+        <File Id="F_System.Runtime.Serialization.Formatters.dll" Source="$(PublishDir)System.Runtime.Serialization.Formatters.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.Serialization.Formatters.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.Serialization.Json.dll" Guid="{0A2CD05F-45C4-5669-A3CD-CDD9AB74BE6A}">
+        <File Id="F_System.Runtime.Serialization.Json.dll" Source="$(PublishDir)System.Runtime.Serialization.Json.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.Serialization.Json.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.Serialization.Primitives.dll" Guid="{3C3F6348-557F-577F-9405-27A869BAE198}">
+        <File Id="F_System.Runtime.Serialization.Primitives.dll" Source="$(PublishDir)System.Runtime.Serialization.Primitives.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.Serialization.Primitives.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.Serialization.Xml.dll" Guid="{3E6685EA-9B74-5E52-B55D-55AE4AF02D1A}">
+        <File Id="F_System.Runtime.Serialization.Xml.dll" Source="$(PublishDir)System.Runtime.Serialization.Xml.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.Serialization.Xml.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.Serialization.dll" Guid="{39AA7438-4F4A-56DE-8E26-4AB611E48482}">
+        <File Id="F_System.Runtime.Serialization.dll" Source="$(PublishDir)System.Runtime.Serialization.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.Serialization.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Runtime.dll" Guid="{076721D2-3953-5985-9FC0-57ED1A378E3F}">
+        <File Id="F_System.Runtime.dll" Source="$(PublishDir)System.Runtime.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Runtime.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.AccessControl.dll" Guid="{CEFEBD15-13D4-5DA1-8AC4-26C906737D84}">
+        <File Id="F_System.Security.AccessControl.dll" Source="$(PublishDir)System.Security.AccessControl.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.AccessControl.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.Claims.dll" Guid="{8EB7E2E1-76B5-5E15-8D1F-840E37A40999}">
+        <File Id="F_System.Security.Claims.dll" Source="$(PublishDir)System.Security.Claims.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.Claims.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.Cryptography.Algorithms.dll" Guid="{8BAC8E42-4D1F-5AD7-832E-C39B6BD165E6}">
+        <File Id="F_System.Security.Cryptography.Algorithms.dll" Source="$(PublishDir)System.Security.Cryptography.Algorithms.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.Cryptography.Algorithms.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.Cryptography.Cng.dll" Guid="{7AC1993A-21DF-59ED-B223-24391A3EB0EA}">
+        <File Id="F_System.Security.Cryptography.Cng.dll" Source="$(PublishDir)System.Security.Cryptography.Cng.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.Cryptography.Cng.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.Cryptography.Csp.dll" Guid="{1201435C-AB92-520A-9479-2CF87A76731F}">
+        <File Id="F_System.Security.Cryptography.Csp.dll" Source="$(PublishDir)System.Security.Cryptography.Csp.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.Cryptography.Csp.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.Cryptography.Encoding.dll" Guid="{43AD3345-C4B5-55B4-9B93-A5C51AA09588}">
+        <File Id="F_System.Security.Cryptography.Encoding.dll" Source="$(PublishDir)System.Security.Cryptography.Encoding.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.Cryptography.Encoding.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.Cryptography.OpenSsl.dll" Guid="{6D1EB4C5-6007-5DA4-8648-054E463353C5}">
+        <File Id="F_System.Security.Cryptography.OpenSsl.dll" Source="$(PublishDir)System.Security.Cryptography.OpenSsl.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.Cryptography.OpenSsl.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.Cryptography.Pkcs.dll" Guid="{A4902F30-7FA7-5ACE-899F-586ADCC66E4B}">
+        <File Id="F_System.Security.Cryptography.Pkcs.dll" Source="$(PublishDir)System.Security.Cryptography.Pkcs.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.Cryptography.Pkcs.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.Cryptography.Primitives.dll" Guid="{168E381F-1AE5-518F-96AB-5AE9C7A10579}">
+        <File Id="F_System.Security.Cryptography.Primitives.dll" Source="$(PublishDir)System.Security.Cryptography.Primitives.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.Cryptography.Primitives.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.Cryptography.ProtectedData.dll" Guid="{FC247359-1076-5819-8EE2-B703B1AA17F7}">
+        <File Id="F_System.Security.Cryptography.ProtectedData.dll" Source="$(PublishDir)System.Security.Cryptography.ProtectedData.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.Cryptography.ProtectedData.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.Cryptography.X509Certificates.dll" Guid="{DF88F4CE-E31C-542C-A9AC-77A6BDC615FB}">
+        <File Id="F_System.Security.Cryptography.X509Certificates.dll" Source="$(PublishDir)System.Security.Cryptography.X509Certificates.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.Cryptography.X509Certificates.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.Cryptography.Xml.dll" Guid="{409F9A41-24D1-5FD5-9006-F99636225C7A}">
+        <File Id="F_System.Security.Cryptography.Xml.dll" Source="$(PublishDir)System.Security.Cryptography.Xml.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.Cryptography.Xml.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.Cryptography.dll" Guid="{88F23BB6-42A5-5DAB-A3BE-8CA8DBA0665F}">
+        <File Id="F_System.Security.Cryptography.dll" Source="$(PublishDir)System.Security.Cryptography.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.Cryptography.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.Permissions.dll" Guid="{803AD00B-E1EE-58DC-A5E2-524ACFCBBC8A}">
+        <File Id="F_System.Security.Permissions.dll" Source="$(PublishDir)System.Security.Permissions.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.Permissions.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.Principal.Windows.dll" Guid="{EB3A9251-4A32-5ED5-AE93-ED70E6166B28}">
+        <File Id="F_System.Security.Principal.Windows.dll" Source="$(PublishDir)System.Security.Principal.Windows.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.Principal.Windows.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.Principal.dll" Guid="{30005700-8FEA-561F-9432-1876C57E7C57}">
+        <File Id="F_System.Security.Principal.dll" Source="$(PublishDir)System.Security.Principal.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.Principal.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.SecureString.dll" Guid="{86C01D95-9F9B-5B57-854E-F7AAD248DDB8}">
+        <File Id="F_System.Security.SecureString.dll" Source="$(PublishDir)System.Security.SecureString.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.SecureString.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Security.dll" Guid="{849E6F80-476F-59D3-A883-D598B22E6792}">
+        <File Id="F_System.Security.dll" Source="$(PublishDir)System.Security.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Security.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.ServiceModel.Web.dll" Guid="{DE7E48A8-C158-527B-A4E8-ED1DB4F9EDEB}">
+        <File Id="F_System.ServiceModel.Web.dll" Source="$(PublishDir)System.ServiceModel.Web.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.ServiceModel.Web.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.ServiceProcess.ServiceController.dll" Guid="{09CE6A62-0DB8-53D5-81F4-71AC805C4486}">
+        <File Id="F_System.ServiceProcess.ServiceController.dll" Source="$(PublishDir)System.ServiceProcess.ServiceController.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.ServiceProcess.ServiceController.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.ServiceProcess.dll" Guid="{2B193217-E24C-53EC-93B0-E3168CC02C85}">
+        <File Id="F_System.ServiceProcess.dll" Source="$(PublishDir)System.ServiceProcess.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.ServiceProcess.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Text.Encoding.CodePages.dll" Guid="{49B7B48C-F12B-57A9-9400-28C0ED341DDF}">
+        <File Id="F_System.Text.Encoding.CodePages.dll" Source="$(PublishDir)System.Text.Encoding.CodePages.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Text.Encoding.CodePages.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Text.Encoding.Extensions.dll" Guid="{44B775CF-8887-5054-A676-851D30035957}">
+        <File Id="F_System.Text.Encoding.Extensions.dll" Source="$(PublishDir)System.Text.Encoding.Extensions.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Text.Encoding.Extensions.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Text.Encoding.dll" Guid="{09706409-DC96-51ED-B076-6F71A8FB63E0}">
+        <File Id="F_System.Text.Encoding.dll" Source="$(PublishDir)System.Text.Encoding.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Text.Encoding.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Text.Encodings.Web.dll" Guid="{B14B7D30-D04B-5938-9DDE-7B341A7F4480}">
+        <File Id="F_System.Text.Encodings.Web.dll" Source="$(PublishDir)System.Text.Encodings.Web.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Text.Encodings.Web.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Text.Json.dll" Guid="{3D413B23-1E1C-5847-A7BA-0A573385949F}">
+        <File Id="F_System.Text.Json.dll" Source="$(PublishDir)System.Text.Json.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Text.Json.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Text.RegularExpressions.dll" Guid="{1DF07A40-BC9A-5484-BD5C-9D4CE75AE29C}">
+        <File Id="F_System.Text.RegularExpressions.dll" Source="$(PublishDir)System.Text.RegularExpressions.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Text.RegularExpressions.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Threading.AccessControl.dll" Guid="{87913465-E3BF-5E03-8127-67A396B7601F}">
+        <File Id="F_System.Threading.AccessControl.dll" Source="$(PublishDir)System.Threading.AccessControl.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Threading.AccessControl.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Threading.Channels.dll" Guid="{5BD44BC9-012E-5FEF-8262-53D4820D6E68}">
+        <File Id="F_System.Threading.Channels.dll" Source="$(PublishDir)System.Threading.Channels.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Threading.Channels.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Threading.Overlapped.dll" Guid="{91942780-33DE-5702-BC61-AC0321405BBB}">
+        <File Id="F_System.Threading.Overlapped.dll" Source="$(PublishDir)System.Threading.Overlapped.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Threading.Overlapped.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Threading.Tasks.Dataflow.dll" Guid="{D15794FE-08D6-57A6-A421-C111226B4D93}">
+        <File Id="F_System.Threading.Tasks.Dataflow.dll" Source="$(PublishDir)System.Threading.Tasks.Dataflow.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Threading.Tasks.Dataflow.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Threading.Tasks.Extensions.dll" Guid="{46FD1B69-1861-5748-960A-D330343AE0A9}">
+        <File Id="F_System.Threading.Tasks.Extensions.dll" Source="$(PublishDir)System.Threading.Tasks.Extensions.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Threading.Tasks.Extensions.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Threading.Tasks.Parallel.dll" Guid="{5E79B2ED-3AFE-572B-A5B9-2CA7AB1C046B}">
+        <File Id="F_System.Threading.Tasks.Parallel.dll" Source="$(PublishDir)System.Threading.Tasks.Parallel.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Threading.Tasks.Parallel.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Threading.Tasks.dll" Guid="{1529D3FC-74C9-507D-B519-AE2830B0078B}">
+        <File Id="F_System.Threading.Tasks.dll" Source="$(PublishDir)System.Threading.Tasks.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Threading.Tasks.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Threading.Thread.dll" Guid="{1EA0C485-C4D7-5E8A-83F4-CB5C14FE7151}">
+        <File Id="F_System.Threading.Thread.dll" Source="$(PublishDir)System.Threading.Thread.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Threading.Thread.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Threading.ThreadPool.dll" Guid="{6350BC77-2217-58E9-BA21-C3E7862DD2A8}">
+        <File Id="F_System.Threading.ThreadPool.dll" Source="$(PublishDir)System.Threading.ThreadPool.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Threading.ThreadPool.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Threading.Timer.dll" Guid="{242AB6FE-99D8-55C3-9113-62152A058EBE}">
+        <File Id="F_System.Threading.Timer.dll" Source="$(PublishDir)System.Threading.Timer.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Threading.Timer.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Threading.dll" Guid="{A114EEA3-3F56-597D-B7C3-4239B4DA7633}">
+        <File Id="F_System.Threading.dll" Source="$(PublishDir)System.Threading.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Threading.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Transactions.Local.dll" Guid="{C42C7D76-4C6A-5A15-9C63-47B35F456F35}">
+        <File Id="F_System.Transactions.Local.dll" Source="$(PublishDir)System.Transactions.Local.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Transactions.Local.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Transactions.dll" Guid="{2E7FB218-67F2-5CF7-A526-D05BF33C9204}">
+        <File Id="F_System.Transactions.dll" Source="$(PublishDir)System.Transactions.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Transactions.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.ValueTuple.dll" Guid="{1016B877-F5BC-59C2-8C3C-3A7DFC8713E9}">
+        <File Id="F_System.ValueTuple.dll" Source="$(PublishDir)System.ValueTuple.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.ValueTuple.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Web.HttpUtility.dll" Guid="{E016B580-E21F-565E-B721-06EFDA5C2EFE}">
+        <File Id="F_System.Web.HttpUtility.dll" Source="$(PublishDir)System.Web.HttpUtility.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Web.HttpUtility.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Web.dll" Guid="{7DC001B8-BCA9-5FF4-A42C-FEE575819A3E}">
+        <File Id="F_System.Web.dll" Source="$(PublishDir)System.Web.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Web.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Windows.Controls.Ribbon.dll" Guid="{5A2E0D40-C590-5A17-BD50-4C53CFE07AA2}">
+        <File Id="F_System.Windows.Controls.Ribbon.dll" Source="$(PublishDir)System.Windows.Controls.Ribbon.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Windows.Controls.Ribbon.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Windows.Extensions.dll" Guid="{75A1401A-534E-5C2F-B01F-D80075AD0DA6}">
+        <File Id="F_System.Windows.Extensions.dll" Source="$(PublishDir)System.Windows.Extensions.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Windows.Extensions.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Windows.Input.Manipulations.dll" Guid="{1670C104-FA58-5079-8C3D-E45E77779414}">
+        <File Id="F_System.Windows.Input.Manipulations.dll" Source="$(PublishDir)System.Windows.Input.Manipulations.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Windows.Input.Manipulations.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Windows.Presentation.dll" Guid="{A6BF5CE8-E548-52AD-922E-733675989EAC}">
+        <File Id="F_System.Windows.Presentation.dll" Source="$(PublishDir)System.Windows.Presentation.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Windows.Presentation.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Windows.dll" Guid="{5234C285-A000-5C49-B1D9-73DFF6AF30E9}">
+        <File Id="F_System.Windows.dll" Source="$(PublishDir)System.Windows.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Windows.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Xaml.dll" Guid="{C5F15573-D025-5F0F-ADFE-8E371593328F}">
+        <File Id="F_System.Xaml.dll" Source="$(PublishDir)System.Xaml.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Xaml.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Xml.Linq.dll" Guid="{048007E3-A419-5FB8-94AD-67A1A8CEBF54}">
+        <File Id="F_System.Xml.Linq.dll" Source="$(PublishDir)System.Xml.Linq.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Xml.Linq.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Xml.ReaderWriter.dll" Guid="{AF5BBB0A-B4B2-5580-A246-00AEBA2AB611}">
+        <File Id="F_System.Xml.ReaderWriter.dll" Source="$(PublishDir)System.Xml.ReaderWriter.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Xml.ReaderWriter.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Xml.Serialization.dll" Guid="{61B7E84D-77B0-56F6-9C24-545191213B92}">
+        <File Id="F_System.Xml.Serialization.dll" Source="$(PublishDir)System.Xml.Serialization.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Xml.Serialization.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Xml.XDocument.dll" Guid="{5D4B6248-23B4-560D-9E76-4DE084A467FA}">
+        <File Id="F_System.Xml.XDocument.dll" Source="$(PublishDir)System.Xml.XDocument.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Xml.XDocument.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Xml.XPath.XDocument.dll" Guid="{3EF5A35F-71F6-576C-9AF5-E4C7A350A708}">
+        <File Id="F_System.Xml.XPath.XDocument.dll" Source="$(PublishDir)System.Xml.XPath.XDocument.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Xml.XPath.XDocument.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Xml.XPath.dll" Guid="{0AE6DF32-EB3B-5320-ACEE-7350FFDE07CB}">
+        <File Id="F_System.Xml.XPath.dll" Source="$(PublishDir)System.Xml.XPath.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Xml.XPath.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Xml.XmlDocument.dll" Guid="{74A3FE8A-366C-5325-B935-6BEF0D00ED0B}">
+        <File Id="F_System.Xml.XmlDocument.dll" Source="$(PublishDir)System.Xml.XmlDocument.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Xml.XmlDocument.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Xml.XmlSerializer.dll" Guid="{5F5DC979-5291-5026-8079-71ABE2581F3E}">
+        <File Id="F_System.Xml.XmlSerializer.dll" Source="$(PublishDir)System.Xml.XmlSerializer.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Xml.XmlSerializer.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.Xml.dll" Guid="{C507B524-C08C-52B5-AA8A-168C559AE0E7}">
+        <File Id="F_System.Xml.dll" Source="$(PublishDir)System.Xml.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.Xml.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_System.dll" Guid="{B92586A6-C9E7-514A-AADA-B1D4A284F7A7}">
+        <File Id="F_System.dll" Source="$(PublishDir)System.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_System.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_TerminalAssets_addon_fit.js" Directory="D_TerminalAssets" Guid="{0403C906-D1EB-5B0F-864E-96BE01F91B10}">
+        <File Id="F_TerminalAssets_addon_fit.js" Source="$(PublishDir)TerminalAssets/addon-fit.js" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_TerminalAssets_addon_fit.js" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_TerminalAssets_terminal.html" Directory="D_TerminalAssets" Guid="{0A8AE71E-CF6D-5327-AD1C-7A76EAE9EE30}">
+        <File Id="F_TerminalAssets_terminal.html" Source="$(PublishDir)TerminalAssets/terminal.html" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_TerminalAssets_terminal.html" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_TerminalAssets_xterm.css" Directory="D_TerminalAssets" Guid="{E65D6442-B712-55BA-B006-38CA4E4EEFAB}">
+        <File Id="F_TerminalAssets_xterm.css" Source="$(PublishDir)TerminalAssets/xterm.css" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_TerminalAssets_xterm.css" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_TerminalAssets_xterm.js" Directory="D_TerminalAssets" Guid="{2EE6BF7D-362D-57C0-8E3E-7CDBD789F08A}">
+        <File Id="F_TerminalAssets_xterm.js" Source="$(PublishDir)TerminalAssets/xterm.js" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_TerminalAssets_xterm.js" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_UIAutomationClient.dll" Guid="{A12E1ACC-C814-57BA-9552-64ADB96AD245}">
+        <File Id="F_UIAutomationClient.dll" Source="$(PublishDir)UIAutomationClient.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_UIAutomationClient.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_UIAutomationClientSideProviders.dll" Guid="{7E6A4BCB-9A07-5A93-8F3D-0E33A5DB1541}">
+        <File Id="F_UIAutomationClientSideProviders.dll" Source="$(PublishDir)UIAutomationClientSideProviders.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_UIAutomationClientSideProviders.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_UIAutomationProvider.dll" Guid="{D66167FB-14A7-5678-8783-32CD3DCBA5A7}">
+        <File Id="F_UIAutomationProvider.dll" Source="$(PublishDir)UIAutomationProvider.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_UIAutomationProvider.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_UIAutomationTypes.dll" Guid="{0E9C12D5-FE9F-55FA-B86C-989AA96844F1}">
+        <File Id="F_UIAutomationTypes.dll" Source="$(PublishDir)UIAutomationTypes.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_UIAutomationTypes.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_WebView2Loader.dll" Guid="{2F1AAF2E-5073-5732-90A2-B86C39BD5DFF}">
+        <File Id="F_WebView2Loader.dll" Source="$(PublishDir)WebView2Loader.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_WebView2Loader.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_WindowsBase.dll" Guid="{A5CC3E32-1DC2-509E-835D-872537ADC4E4}">
+        <File Id="F_WindowsBase.dll" Source="$(PublishDir)WindowsBase.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_WindowsBase.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_clretwrc.dll" Guid="{AFD948DC-7F4C-582F-9A2A-91C4D97FC705}">
+        <File Id="F_clretwrc.dll" Source="$(PublishDir)clretwrc.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_clretwrc.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_clrgc.dll" Guid="{7E6B0127-6483-5550-8E4B-22A4099D3E27}">
+        <File Id="F_clrgc.dll" Source="$(PublishDir)clrgc.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_clrgc.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_clrgcexp.dll" Guid="{F7C620A1-0069-55F1-B5C9-197CC375A721}">
+        <File Id="F_clrgcexp.dll" Source="$(PublishDir)clrgcexp.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_clrgcexp.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_clrjit.dll" Guid="{B2D1B917-F446-552C-A233-D06BBEA39E43}">
+        <File Id="F_clrjit.dll" Source="$(PublishDir)clrjit.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_clrjit.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_coreclr.dll" Guid="{B5026EE8-1768-5D39-808F-B761A83C2400}">
+        <File Id="F_coreclr.dll" Source="$(PublishDir)coreclr.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_coreclr.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_createdump.exe" Guid="{CEE9E9EB-DB34-5240-BAEA-108DC1DC14E1}">
+        <File Id="F_createdump.exe" Source="$(PublishDir)createdump.exe" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_createdump.exe" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_hostfxr.dll" Guid="{2D0251AB-00FC-5AFA-A4CC-87E2FC9AF3E5}">
+        <File Id="F_hostfxr.dll" Source="$(PublishDir)hostfxr.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_hostfxr.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_hostpolicy.dll" Guid="{B3003915-8C95-5540-92E6-DE36F141A39D}">
+        <File Id="F_hostpolicy.dll" Source="$(PublishDir)hostpolicy.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_hostpolicy.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_mscordaccore.dll" Guid="{4C237E28-6232-5AC0-AFED-404AC7B52ABC}">
+        <File Id="F_mscordaccore.dll" Source="$(PublishDir)mscordaccore.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_mscordaccore.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_mscordaccore_amd64_amd64_9.0.1726.26416.dll" Guid="{D162AEDF-A581-5F74-B9B7-5897CC3B274B}">
+        <File Id="F_mscordaccore_amd64_amd64_9.0.1726.26416.dll" Source="$(PublishDir)mscordaccore_amd64_amd64_9.0.1726.26416.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_mscordaccore_amd64_amd64_9.0.1726.26416.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_mscordbi.dll" Guid="{D99FAD31-FA4F-561D-A2D4-84F49C1DA9CB}">
+        <File Id="F_mscordbi.dll" Source="$(PublishDir)mscordbi.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_mscordbi.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_mscorlib.dll" Guid="{59ADE1F5-B1F4-5CAF-BEA9-33D4B1691001}">
+        <File Id="F_mscorlib.dll" Source="$(PublishDir)mscorlib.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_mscorlib.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_mscorrc.dll" Guid="{13525BA0-D177-5651-BEF6-E0400D5F6AF6}">
+        <File Id="F_mscorrc.dll" Source="$(PublishDir)mscorrc.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_mscorrc.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_msquic.dll" Guid="{716166D2-AE7E-5D87-841A-B19B68420AFB}">
+        <File Id="F_msquic.dll" Source="$(PublishDir)msquic.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_msquic.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_netstandard.dll" Guid="{AB47F68C-96C7-5B08-8E91-017FEEE21630}">
+        <File Id="F_netstandard.dll" Source="$(PublishDir)netstandard.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_netstandard.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_runtimes_win_x64_native_WebView2Loader.dll" Directory="D_runtimes_win_x64_native" Guid="{737626DF-AECB-5668-9D3B-4C190735F9A1}">
+        <File Id="F_runtimes_win_x64_native_WebView2Loader.dll" Source="$(PublishDir)runtimes/win-x64/native/WebView2Loader.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_runtimes_win_x64_native_WebView2Loader.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_vcruntime140_cor3.dll" Guid="{BECBE6A8-0EAF-53FF-958E-2C8903EE3962}">
+        <File Id="F_vcruntime140_cor3.dll" Source="$(PublishDir)vcruntime140_cor3.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_vcruntime140_cor3.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_wpfgfx_cor3.dll" Guid="{E9681CBF-75D6-52A8-890F-CB4444461982}">
+        <File Id="F_wpfgfx_cor3.dll" Source="$(PublishDir)wpfgfx_cor3.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_wpfgfx_cor3.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_zh_Hans_PresentationCore.resources.dll" Directory="D_zh_Hans" Guid="{83921738-ABB9-5041-8B2A-089B8463563F}">
+        <File Id="F_zh_Hans_PresentationCore.resources.dll" Source="$(PublishDir)zh-Hans/PresentationCore.resources.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_zh_Hans_PresentationCore.resources.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_zh_Hans_PresentationFramework.resources.dll" Directory="D_zh_Hans" Guid="{4498B395-1C4A-53F3-ACB4-17BC0E4D4029}">
+        <File Id="F_zh_Hans_PresentationFramework.resources.dll" Source="$(PublishDir)zh-Hans/PresentationFramework.resources.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_zh_Hans_PresentationFramework.resources.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_zh_Hans_PresentationUI.resources.dll" Directory="D_zh_Hans" Guid="{1E4BF471-3672-5A87-ACB9-41EFB967DF86}">
+        <File Id="F_zh_Hans_PresentationUI.resources.dll" Source="$(PublishDir)zh-Hans/PresentationUI.resources.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_zh_Hans_PresentationUI.resources.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_zh_Hans_ReachFramework.resources.dll" Directory="D_zh_Hans" Guid="{869BF670-1006-5290-895F-8E44485B60D9}">
+        <File Id="F_zh_Hans_ReachFramework.resources.dll" Source="$(PublishDir)zh-Hans/ReachFramework.resources.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_zh_Hans_ReachFramework.resources.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_zh_Hans_System.Windows.Controls.Ribbon.resources.dll" Directory="D_zh_Hans" Guid="{24FAE63D-F96A-5AE4-9C80-62699658D83E}">
+        <File Id="F_zh_Hans_System.Windows.Controls.Ribbon.resources.dll" Source="$(PublishDir)zh-Hans/System.Windows.Controls.Ribbon.resources.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_zh_Hans_System.Windows.Controls.Ribbon.resources.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_zh_Hans_System.Windows.Input.Manipulations.resources.dll" Directory="D_zh_Hans" Guid="{F09CC07D-0472-5856-A637-85767E40F2B3}">
+        <File Id="F_zh_Hans_System.Windows.Input.Manipulations.resources.dll" Source="$(PublishDir)zh-Hans/System.Windows.Input.Manipulations.resources.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_zh_Hans_System.Windows.Input.Manipulations.resources.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_zh_Hans_System.Xaml.resources.dll" Directory="D_zh_Hans" Guid="{76324F61-EECB-59B5-B9D6-7F6C96AC5791}">
+        <File Id="F_zh_Hans_System.Xaml.resources.dll" Source="$(PublishDir)zh-Hans/System.Xaml.resources.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_zh_Hans_System.Xaml.resources.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_zh_Hans_UIAutomationClient.resources.dll" Directory="D_zh_Hans" Guid="{BF4D0CC9-4441-5E35-9F28-F583536778C6}">
+        <File Id="F_zh_Hans_UIAutomationClient.resources.dll" Source="$(PublishDir)zh-Hans/UIAutomationClient.resources.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_zh_Hans_UIAutomationClient.resources.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_zh_Hans_UIAutomationClientSideProviders.resources.dll" Directory="D_zh_Hans" Guid="{99D5F0A0-8878-59C3-B165-C873B2B9E1F9}">
+        <File Id="F_zh_Hans_UIAutomationClientSideProviders.resources.dll" Source="$(PublishDir)zh-Hans/UIAutomationClientSideProviders.resources.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_zh_Hans_UIAutomationClientSideProviders.resources.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_zh_Hans_UIAutomationProvider.resources.dll" Directory="D_zh_Hans" Guid="{875596C9-A4AF-5ED1-83FD-F3403ADA3FDA}">
+        <File Id="F_zh_Hans_UIAutomationProvider.resources.dll" Source="$(PublishDir)zh-Hans/UIAutomationProvider.resources.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_zh_Hans_UIAutomationProvider.resources.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_zh_Hans_UIAutomationTypes.resources.dll" Directory="D_zh_Hans" Guid="{532E2777-5084-5B16-B6AA-A4BEB5FFDFB5}">
+        <File Id="F_zh_Hans_UIAutomationTypes.resources.dll" Source="$(PublishDir)zh-Hans/UIAutomationTypes.resources.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_zh_Hans_UIAutomationTypes.resources.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_zh_Hans_WindowsBase.resources.dll" Directory="D_zh_Hans" Guid="{2A4CAA9A-73BD-5D74-BE52-918C1773D464}">
+        <File Id="F_zh_Hans_WindowsBase.resources.dll" Source="$(PublishDir)zh-Hans/WindowsBase.resources.dll" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_zh_Hans_WindowsBase.resources.dll" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_____.txt" Guid="{84F9777A-0CE8-5A69-AF6D-B18350BFEAA2}">
+        <File Id="F_____.txt" Source="$(PublishDir)使用说明.txt" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_____.txt" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Dir_runtimes_win_x64_native" Directory="D_runtimes_win_x64_native" Guid="{77A0D786-F043-5C9A-BCFE-129F09C494BD}">
+        <RemoveFolder Id="Remove_C_Dir_runtimes_win_x64_native" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Dir_runtimes_win_x64_native" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Dir_runtimes_win_x64" Directory="D_runtimes_win_x64" Guid="{311069C8-495D-57C5-8109-4BBBD5EA2FED}">
+        <RemoveFolder Id="Remove_C_Dir_runtimes_win_x64" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Dir_runtimes_win_x64" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Dir_TerminalAssets" Directory="D_TerminalAssets" Guid="{D3280A51-38FF-5D9C-A33E-4B99890AA180}">
+        <RemoveFolder Id="Remove_C_Dir_TerminalAssets" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Dir_TerminalAssets" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Dir_runtimes" Directory="D_runtimes" Guid="{F61B02DB-442A-563B-AB03-652E3977620A}">
+        <RemoveFolder Id="Remove_C_Dir_runtimes" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Dir_runtimes" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="C_Dir_zh_Hans" Directory="D_zh_Hans" Guid="{42FC8ACA-224B-554F-849E-006397516116}">
+        <RemoveFolder Id="Remove_C_Dir_zh_Hans" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\ServerOpsHelper\Components" Name="C_Dir_zh_Hans" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

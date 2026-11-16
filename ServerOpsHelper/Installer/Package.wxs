@@ -1,0 +1,239 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <!--
+    服务器运维助手 · 安装包定义（WiX v4+ 语法）
+
+    ⚠️ 安装/卸载都**不会碰用户数据**：程序装到 %LOCALAPPDATA%\Programs\ServerOpsHelper，
+    而数据（链接、密码箱、访问记录、账号）一直在 %LOCALAPPDATA%\ServerOpsHelper。
+    安装时会把数据目录**建出来**（让用户装完就知道数据放哪），但**不登记 RemoveFolder**，
+    所以卸载时不会删它 —— 升级或重装后设置与密码都还在。
+
+    重新打包：
+        cd ServerOpsHelper/Installer
+        python build_installer.py            # 会先按 publish 产物重新生成 Files.wxs，再调用 wix
+  -->
+  <Package Name="服务器运维助手"
+           Manufacturer="ServerOpsHelper"
+           Version="1.9.2"
+           Language="2052"
+           Codepage="65001"
+           UpgradeCode="8F3A6E2C-4B7D-4E19-9C6A-2D5B8E1F7A34"
+           Scope="perUser"
+           Compressed="yes"
+           ProductCode="$(var.ProductCode)">
+
+    <SummaryInformation Description="服务器运维助手 安装包（免安装 .NET，含内置浏览器）" />
+
+    <!--
+        安装向导：欢迎 → **选择安装位置** → 确认 → 安装 → 完成。
+
+        ⚠️ 对话框里绑定的是 INSTALLPARENT（**父目录**），不是安装目录本身：
+        用户选 E:\AI → 程序装进 E:\AI\ServerOpsHelper\（自动新建一层应用文件夹）。
+        2026-09-30 按老板要求改的：原先用户选 E:\AI，264 个文件会直接铺进 E:\AI，
+        和用户自己的文件混在一起。
+
+        默认位置仍是「当前用户」的 %LOCALAPPDATA%\Programs（INSTALLPARENT 的默认解析），
+        最终安装目录 = %LOCALAPPDATA%\Programs\ServerOpsHelper（不需要管理员）。
+        依赖 WiX 的 UI 扩展：wix extension add -g WixToolset.UI.wixext/5.0.2
+    -->
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLPARENT" />
+
+    <!-- 应用图标：由 build_installer.py 通过 -d IconFile=<绝对路径> 传进来。
+         主程序 EXE 自己已经嵌了图标（csproj 的 ApplicationIcon），快捷方式不写 Icon 也会显示它；
+         这里显式引用是为了「设置 → 应用」里的卸载条目也有图标。 -->
+    <Icon Id="AppIcon" SourceFile="$(IconFile)" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+
+    <!--
+      ⚠️ DISABLEROLLBACK = 1 —— 关掉安装事务的「回滚备份」（2026-10-01 加，专治 E 盘必挂的 1926）
+
+      背景：MSI 会在**目标盘根目录**建 <盘>:\Config.Msi 存回滚脚本与备份文件（*.rbf）。
+      这个目录的 ACL 是「仅 SYSTEM + 管理员」，而且**不继承盘根 ACL**（任何盘根授权都绕不过）。
+      非提权安装（我们就是 perUser）在收尾时要对这些 .rbf 执行 SetSecurity，
+      在 ACL 异常或用户权限受限的盘上必然失败，报：
+          错误 1926 · 无法设置文件 "E:\Config.Msi\xxxx.rbf" 的文件安全 · 错误 5
+
+      实测（2026-10-01）：同一个安装包装到 C:/D: 全都正常，装到 E:\AI 必挂；
+      而且**只有需要备份"将被覆盖的已有文件"时才会产生 .rbf**（本次 4 个）。
+      关掉回滚后 MSI 不再写这些文件 → 从根上绕开这个权限坑。
+
+      代价：安装中途失败时不会自动回滚。本应用只有 269 个文件 + 快捷方式 + 注册表项，
+      失败重装即可覆盖，代价可接受。（dsh-launcher 等安装包公开采用同一方案。）
+    -->
+    <Property Id="DISABLEROLLBACK" Value="1" />
+
+    <MajorUpgrade DowngradeErrorMessage="已经安装了更新版本的服务器运维助手，无需重复安装。" />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <!--
+      程序目录（三层）：
+        %LOCALAPPDATA%\Programs                      ← ProgramsFolder（系统公共目录）
+          └─ INSTALLPARENT（Name="."，与父目录同层）   ← 向导里用户填/选的就是这一层
+              └─ INSTALLFOLDER（Name="ServerOpsHelper"）← 文件真正安装到这里
+
+      MSI 的路径解析规则：子目录 = 父目录解析值 + DefaultDir。
+      所以用户把 INSTALLPARENT 设成 E:\AI 时，INSTALLFOLDER 自动变成
+      E:\AI\ServerOpsHelper —— 「选父目录、自动建应用文件夹」就是靠这一层实现的，
+      不需要任何自定义动作。
+
+      Name="." 在 MSI 的 DefaultDir 里表示「与父目录相同」，即 INSTALLPARENT
+      默认就解析为 %LOCALAPPDATA%\Programs，默认安装目录因而是
+      %LOCALAPPDATA%\Programs\ServerOpsHelper（跟改动前一致）。
+
+      注意：XML 注释里**不能出现连续两个减号**（会报 MSB4025 / not well-formed）。
+
+      ProgramsFolder 这个中间层也要登记 RemoveFolder —— ICE64 要求
+      "用户配置目录下的每一层"都能被卸载清理，不只是最底层。
+    -->
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLPARENT" Name=".">
+          <Directory Id="INSTALLFOLDER" Name="ServerOpsHelper" />
+        </Directory>
+      </Directory>
+      <!--
+        数据目录：与程序目录**平级**，位置固定，不随安装位置变。
+        （用户就算把程序装到 E:\AI，数据仍在 %LOCALAPPDATA%\ServerOpsHelper）
+        安装时会把它建出来；里面有数据时不会被碰，详见下面 DataFolderMarker 组件。
+      -->
+      <Directory Id="DataFolder" Name="ServerOpsHelper" />
+    </StandardDirectory>
+
+    <!--
+      开始菜单。卸载时连带清掉「服务器运维助手」这个子目录（ICE64）。
+
+      注意：这里**不写 RemoveFolder**。Start Menu 是标准目录，RemoveFolder
+      只能作用于我们自己创建的子目录；AppMenuFolder 的清理由下面的
+      AppMenuCleanup 组件负责。
+    -->
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppMenuFolder" Name="服务器运维助手" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <Feature Id="Main"
+             Title="服务器运维助手"
+             Description="主程序与运行库（自带 .NET 运行时，无需另外安装）"
+             Level="1"
+             AllowAbsent="no">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="InstallFolderMarker" />
+      <ComponentRef Id="AppMenuCleanup" />
+      <ComponentRef Id="DataFolderMarker" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <!--
+      主程序组件。
+
+      ⚠️ perUser + 快捷方式的组合，KeyPath 必须是 **HKCU 注册表键**，不能是 exe 文件，
+      否则连吃三条 ICE 错误（都是本次实测出来的）：
+        ICE38: Component ... installs to user profile. It must use a registry key
+               under HKCU as its KeyPath, not a file.
+        ICE43: Component ... has non-advertised shortcuts. It should use a registry
+               key under HKCU as its KeyPath, not a file.
+        ICE50: The extension of Icon 'AppIcon' for Shortcut ... does not match the
+               extension of the Key File for component ...
+
+      正确姿势：注册表键当 KeyPath（RegistryValue KeyPath="yes"），
+      快捷方式作为 **Component 的直接子元素**、用 Target 指向 exe。
+      （Shortcut 不能嵌在 RegistryValue / File 里面，会报 WIX0005。）
+
+      注意 Guid 必须写死：组件含注册表 KeyPath，不能用 Guid="*"（报 WIX0230）。
+      值固定不变 —— 升级时组件身份要稳定，否则会被当成新组件重装。
+    -->
+    <Component Id="MainExecutable" Directory="INSTALLFOLDER"
+               Guid="{9C4E7A12-3B8D-4F56-A1E2-7D6C5B4A3F21}">
+      <File Id="ServerOpsHelperExe"
+            Source="$(PublishDir)ServerOpsHelper.exe" />
+      <Shortcut Id="StartMenuShortcut"
+                Directory="AppMenuFolder"
+                Name="服务器运维助手"
+                Description="服务器运维助手"
+                Target="[INSTALLFOLDER]ServerOpsHelper.exe"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="AppIcon" />
+      <Shortcut Id="DesktopShortcut"
+                Directory="DesktopFolder"
+                Name="服务器运维助手"
+                Description="服务器运维助手"
+                Target="[INSTALLFOLDER]ServerOpsHelper.exe"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="AppIcon" />
+      <RegistryValue Root="HKCU"
+                     Key="Software\ServerOpsHelper"
+                     Name="Installed"
+                     Type="integer"
+                     Value="1"
+                     KeyPath="yes" />
+    </Component>
+
+    <!--
+      安装目录清理 + 安装位置登记（没有文件，只有 HKCU 键，天然满足 ICE38）：
+      RemoveFolder 必须放在 Component 内（放 Directory 里报 WIX0005），
+      它满足 ICE64「用户配置目录要登记在 RemoveFile 表」的要求。
+    -->
+    <Component Id="InstallFolderMarker" Directory="INSTALLFOLDER"
+               Guid="{2A8F5C31-6E4B-4D97-B3C5-8F1E9A7D604B}">
+      <RemoveFolder Id="RemoveInstallFolder" On="uninstall" />
+      <RegistryValue Root="HKCU"
+                     Key="Software\ServerOpsHelper"
+                     Name="InstallFolder"
+                     Type="string"
+                     Value="[INSTALLFOLDER]"
+                     KeyPath="yes" />
+    </Component>
+
+    <!--
+      开始菜单子目录的清理组件（ICE64 要求：AppMenuFolder 在用户配置目录下，
+      必须在 RemoveFile 表里有登记）。
+    -->
+    <Component Id="AppMenuCleanup" Directory="AppMenuFolder"
+               Guid="{5D7B2E94-1C3A-4E68-9F42-6B8D0A5C7E13}">
+      <RemoveFolder Id="RemoveAppMenuFolder" On="uninstall" />
+      <RegistryValue Root="HKCU"
+                     Key="Software\ServerOpsHelper"
+                     Name="StartMenuCreated"
+                     Type="integer"
+                     Value="1"
+                     KeyPath="yes" />
+    </Component>
+
+    <!--
+      数据目录：安装时就把它建出来，让用户装完能直接看到数据存在哪。
+
+      ⚠️⚠️ 这里**刻意没有 RemoveFolder** —— 这是整个安装包里最要紧的一条规则。
+      只要加上 RemoveFolder，卸载时 Windows Installer 就会把这个目录
+      **连同里面的密码箱、服务器列表、访问历史一起删干净**，用户的密码就没了。
+      MSI 在这里只负责"创建"、不负责"登记删除"：
+        · 目录已存在（用户早就在用）→ CreateFolder 什么都不做，已有数据毫发无损；
+        · 卸载 → 因为没登记 RemoveFolder，MSI 不会按组件规则去删它。
+
+      ⚠️ 但有一个**实测确认过**的细节（2026-09-29）：
+      卸载时 MSI 仍会顺手清掉**变空的**目录（这是 CreateFolder 的标准反向行为，
+      不由 RemoveFolder 决定）。实测结果：
+        · 目录里有 1116 个真实文件 → 卸载后**逐字节不变**（这是关键保障）；
+        · 目录是空的 → 卸载后被清掉。
+      空目录被清是无害的：没有数据可丢，而且下次安装还会再建。
+      真正要紧的是"有数据时不能动"，这一条已经被实测守住。
+
+      KeyPath 用 HKCU 注册表键，理由同 InstallFolderMarker：perUser 场景下
+      组件不能拿文件当 KeyPath，否则吃 ICE38。
+    -->
+    <Component Id="DataFolderMarker" Directory="DataFolder"
+               Guid="{7E1D4A85-9C62-4B3F-8A17-5D2E6F903C48}">
+      <CreateFolder />
+      <RegistryValue Root="HKCU"
+                     Key="Software\ServerOpsHelper"
+                     Name="DataFolder"
+                     Type="string"
+                     Value="[DataFolder]"
+                     KeyPath="yes" />
+    </Component>
+  </Fragment>
+
+</Wix>

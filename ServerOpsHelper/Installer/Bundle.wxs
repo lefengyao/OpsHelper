@@ -1,0 +1,145 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
+
+  <!--
+    单文件 EXE 安装程序（Burn 引导程序，内部包着 MSI）。
+
+    为什么要有它：
+    1. 只有一个 .exe，双击就装，分发方便；
+    2. 自带的「选项」页可以**选安装位置**（FolderEditbox + 浏览按钮 = 资源管理器选目录，
+       这是 WixStdBA 的标准 UI，不要设 SuppressOptionsUI，否则浏览按钮就没了）；
+    3. **卸载可靠**：Burn 会把自己缓存到
+       %LOCALAPPDATA%\Package Cache\ 下，"设置 → 应用"里的卸载项指向这个缓存的 exe，
+       不再依赖当初从哪个目录双击的安装包（旧 MSI 那种「找不到安装包就卸载不了」的坑不会再有）。
+
+    重新打包：python build_bundle.py（由 release_all.py 自动调用）
+  -->
+  <!--
+    ⚠️ ProviderKey **不要**显式设置（2026-10-01 实测结论）：
+      1. 试过用 -d 传入按版本派生的 GUID，但**没生效** —— 装完读注册表，
+         ARP 键名仍不是传入的值（WiX 5 对 Bundle/@ProviderKey 的处理与预期不符）；
+      2. 更关键的是**它本来就不需要**：实测「同版本重新出包 → 再装」，Burn 会把
+         旧的 ARP 条目**替换**掉，不会留下两条重复（这是 Burn 按 UpgradeCode
+         管理产品的标准行为）。
+    所以这里用 WiX 默认值即可；真正需要确定性的是 MSI 的 ProductCode
+    （在 Package.wxs，由 build_installer.py 按版本派生）—— 那个是实测生效的。
+  -->
+  <Bundle Name="服务器运维助手"
+          Version="1.9.2"
+          Manufacturer="ServerOpsHelper"
+          UpgradeCode="8E6B1DDE-58E5-41C9-A696-8FB4D2FDD07C"
+          IconSourceFile="$(IconFile)"
+          Compressed="yes">
+
+    <!--
+      引导程序 UI 配置。
+
+      【主题必须用大主题，这是关键】
+        2026-09-21 实测：小主题 hyperlinkLicense **不含 Options 页的布局**。
+        点「Options」只会让窗口变大（970x600 → 996x671），里面一片空白，
+        既没有"安装位置"输入框也没有"Browse"按钮 —— 用户看到的观感就是
+        "这个安装程序不能选目录"。
+
+        换到 hyperlinkLargeLicense 后，Options 页完整出现（截图实测）：
+            Setup Options
+            Install location:  [ C:\Users\<用户>\AppData\Local\Programs\ServerOpsHelper ]  [ Browse ]
+                                                                          OK   Cancel
+        所以**必须用 *LargeLicense 系列**，否则"选安装位置"这个功能等于没有。
+
+      【SuppressOptionsUI 不要设】
+        官方文档：设成 yes 则 "the Options button will not be shown and the user
+        will not be able to choose an installation directory"。我们不设它（默认 no）。
+
+      【LaunchTarget 结尾必须有反斜杠】
+        早期版本写 "[InstallFolder]ServerOpsHelper.exe"，拼出
+        "…\ServerOpsHelperServerOpsHelper.exe"（装完点启动必然打不开）。
+        2026-09-30 起 InstallFolder 的语义是「父目录」（用户选 E:\AI，程序装在
+        E:\AI\ServerOpsHelper\），所以这里的拼接式子不变、结果恰好正确：
+        [InstallFolder]\ServerOpsHelper.exe → E:\AI\ServerOpsHelper.exe。
+
+      【界面语言：简体中文靠 LocalizationFile 提供】
+        2026-09-21 核实：WixStdBA 自带主题只内置英文资源 —— WiX 源码 stdbas/Resources 下
+        确实有 2052 目录，但**只有 wixpreq.wxl（.NET 依赖提示语），没有主界面资源**，
+        所以中文界面不能靠"切 culture"自动获得，必须自带一份完整字符串表。
+
+        做法：同目录 zh-CN.wxl 逐条覆盖官方 HyperlinkTheme.wxl 的全部字符串 ID
+        （Id 名一字不差，因为主题 XML 里是 #(loc.XXX) 按名取值的）。
+        再配合 build_bundle.py 的 -culture zh-CN，引导程序 UI 即为简体中文。
+
+      【欢迎页正文说明文字】
+        欢迎页中间的说明文字由 InstallMessage / InstallMessageOptions 两条控制，
+        WixStdBA 按"是否显示 Options 按钮"二选一。本主题有 Options 按钮，
+        故实际取 InstallMessageOptions —— zh-CN.wxl 里已把它写成
+        「…点击「安装」开始安装；如需更改安装位置，请先点击「选项」…」，
+        既给了操作指引，也顺带填掉了原先 LicenseUrl="" 造成的空白区域。
+    -->
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication Theme="hyperlinkLargeLicense"
+                                              LocalizationFile="$(var.LocFile)"
+                                              LicenseUrl=""
+                                              ShowVersion="yes"
+                                              LaunchTarget="[InstallFolder]\ServerOpsHelper.exe" />
+    </BootstrapperApplication>
+
+    <!--
+      安装位置变量。
+
+      这里踩过两轮坑（2026-09-21，安装/卸载分别挂一次），最终结论如下：
+
+      【第 1 轮 · 装不上】原来写 Type="string"：
+          <Variable Name="InstallFolder" Type="string"
+                    Value="[LocalAppDataFolder]Programs\ServerOpsHelper" bal:Overridable="yes" />
+      string 类型**不做变量展开**，于是 "[LocalAppDataFolder]Programs\ServerOpsHelper"
+      这串字面量被原样塞进 MSI 命令行 → MSI 报「错误 1606 无法访问网络位置」→ 1603 失败。
+
+      【第 2 轮 · 卸不掉】去掉 Type 后安装好了，但**卸载又 1603**。
+      原因：卸载时 Burn 从注册表读回变量值，**不会再做一次 [变量] 展开**，
+      于是又拿 "[LocalAppDataFolder]Programs\ServerOpsHelper" 这个字面量去删，
+      报同样的 1606，文件一个都没删掉。
+
+      【结论】不能依赖 Burn 的 [变量] 展开，必须让变量在**运行时**就持有实路径。
+      做法：变量默认留空，由下面的 SetVariable 在 Detect 阶段后用实路径填充；
+      用户若通过「选项」页或命令行指定了路径，那个值本身就是实路径，条件判断会放过它。
+    -->
+    <Variable Name="InstallFolder"
+              Value=""
+              bal:Overridable="yes"
+              Persisted="yes" />
+
+    <!--
+      把 InstallFolder 填成实路径。
+
+      时机：Burn 在 Detect 之后、Plan 之前求值 —— 早于传给 MSI，也早于写进
+      注册表供卸载使用，所以安装和卸载两端拿到的都是绝对路径。
+
+      Condition 用"变量为空"判断（Burn 里空变量在条件中视为 false）：
+      用户没指定 → 条件成立 → 写入默认实路径；
+      用户指定了 → 条件不成立 → 保留用户的选择。
+
+      注意：Burn 条件**没有"包含/开头于"运算符**（= != ~= 都是整体字符串比较，
+      ~= 仅是不区分大小写），所以不能用 "InstallFolder ~= \"[\"" 之类的写法 ——
+      那个坑我踩过，会把条件判成 false，SetVariable 静默不执行。
+
+      SetVariable 的 Value 会被当作 formatted 字符串求值，
+      所以这里的 [LocalAppDataFolder] 会被展开成 C:\Users\<用户>\AppData\Local。
+    -->
+    <SetVariable Id="ResolveInstallFolder"
+                 Variable="InstallFolder"
+                 Value="[LocalAppDataFolder]Programs"
+                 Condition="NOT InstallFolder" />
+
+    <Chain>
+      <!--
+        DisplayInternalUI 保持默认 no：界面只由引导程序提供，MSI 静默装到用户选定的目录。
+
+        ⚠️ InstallFolder 的语义是「父目录」（2026-09-30 起）：用户在「选项」页填 E:\AI，
+        程序会装进 E:\AI\ServerOpsHelper\。所以这里传给 MSI 的是 INSTALLPARENT
+        （MSI 侧定义：INSTALLFOLDER = INSTALLPARENT\ServerOpsHelper），
+        而不是 INSTALLFOLDER 本身 —— 传错了的话文件会直接铺在用户选的目录里。
+      -->
+      <MsiPackage SourceFile="$(MsiFile)" Vital="yes" Visible="no">
+        <MsiProperty Name="INSTALLPARENT" Value="[InstallFolder]" />
+      </MsiPackage>
+    </Chain>
+  </Bundle>
+</Wix>

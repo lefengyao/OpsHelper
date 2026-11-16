@@ -1,0 +1,114 @@
+<Application x:Class="ServerOpsHelper.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.modernwpf.com/2019"
+             xmlns:converters="clr-namespace:ServerOpsHelper.Converters">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ui:ThemeResources RequestedTheme="Dark" />
+                <ui:XamlControlsResources />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- 转换器放在应用级资源：DataTemplate 里的 StaticResource 只沿
+                 「模板所属文件 → 应用资源」查找，放在某个窗口的 Resources 里会解析不到 -->
+            <converters:OsTypeToIconConverter x:Key="OsTypeToIconConverter" />
+            <converters:LinkKindToIconConverter x:Key="LinkKindToIconConverter" />
+
+            <!-- 危险操作按钮样式，供 ContentDialog 使用 -->
+            <Style x:Key="DangerButtonStyle"
+                   TargetType="Button"
+                   BasedOn="{StaticResource AccentButtonStyle}">
+                <Setter Property="Background" Value="#D13438" />
+                <Setter Property="Foreground" Value="White" />
+            </Style>
+
+            <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+            <!--
+              覆盖 ModernWpf 内置文字样式的原因：
+              这些样式本身只设字号字重、不设前景色，靠继承取色。而 TextBlock 一旦被显式指定 Style，
+              就不再套用 ModernWpf 的隐式 TextBlock 样式（主题前景色正是来自那里），于是退回属性继承——
+              继承来自「窗口」或「页面」。而本项目的 LoginWindow / MainWindow 都继承自 Window，
+              拿不到 ModernWpf 的主题化窗口样式（前景色是 WPF 默认的黑色）；Frame 里的 Page 又有自己的
+              默认前景色挡住窗口的值。结果就是深色背景下这些字是黑底黑字、完全看不见。
+              这里用 BasedOn 接回隐式基样式，再用显式主题画刷兜底；字号字重照抄 ModernWpf 原值。
+              应用资源里的直接条目优先于 MergedDictionaries，所以能盖住内置同名样式。
+            -->
+            <Style x:Key="HeaderTextBlockStyle"
+                   TargetType="TextBlock"
+                   BasedOn="{StaticResource {x:Type TextBlock}}">
+                <Setter Property="FontSize" Value="46" />
+                <Setter Property="FontWeight" Value="Light" />
+                <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            </Style>
+
+            <Style x:Key="SubtitleTextBlockStyle"
+                   TargetType="TextBlock"
+                   BasedOn="{StaticResource {x:Type TextBlock}}">
+                <Setter Property="FontSize" Value="20" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            </Style>
+
+            <Style x:Key="CaptionTextBlockStyle"
+                   TargetType="TextBlock"
+                   BasedOn="{StaticResource {x:Type TextBlock}}">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            </Style>
+
+            <Style x:Key="BodyTextBlockStyle"
+                   TargetType="TextBlock"
+                   BasedOn="{StaticResource {x:Type TextBlock}}">
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            </Style>
+
+            <!-- 列表项主标题：同样要显式给前景色，否则深色下继承到黑色会看不见 -->
+            <Style x:Key="ItemTitleTextBlockStyle"
+                   TargetType="TextBlock"
+                   BasedOn="{StaticResource {x:Type TextBlock}}">
+                <Setter Property="FontSize" Value="15" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+            </Style>
+
+            <!-- 列表项次要说明 -->
+            <Style x:Key="ItemCaptionTextBlockStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            </Style>
+
+            <!-- 侧边栏「最近访问」里的条目按钮：做成无边框的列表行 -->
+            <Style x:Key="PaneLinkButtonStyle"
+                   TargetType="Button"
+                   BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                <Setter Property="Margin" Value="0,1" />
+                <Setter Property="Padding" Value="8,5" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Background" Value="Transparent" />
+            </Style>
+
+            <!-- ☰ 工具下拉窗里的菜单项：整行可点、悬停高亮，像浏览器菜单 -->
+            <Style x:Key="DropMenuItemButton"
+                   TargetType="Button"
+                   BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                <Setter Property="Margin" Value="2,1" />
+                <Setter Property="Padding" Value="10,7" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Background" Value="Transparent" />
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

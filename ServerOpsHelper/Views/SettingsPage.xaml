@@ -1,0 +1,555 @@
+<Page x:Class="ServerOpsHelper.Views.SettingsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.modernwpf.com/2019"
+      xmlns:controls="clr-namespace:ServerOpsHelper.Controls"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      mc:Ignorable="d"
+      Title="系统设置">
+
+    <Page.Resources>
+        <!--
+            顶部页签：Windows 11 设置那种「文字 + 底下一条指示条」的样式。
+            刻意不用 TabControl —— 它只实例化当前 Tab 的内容，
+            未被选中的页控件会被卸载，探针（以及任何 FindName）都会找不到人。
+            这里四个面板全部实例化，只靠 Visibility 切换，逻辑树始终完整。
+        -->
+        <Style x:Key="SettingsNavItemStyle" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Grid Background="Transparent" Margin="0,0,4,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <ContentPresenter Grid.Row="0"
+                                              Margin="14,10,14,10"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+
+                            <Border x:Name="Indicator"
+                                    Grid.Row="1"
+                                    Height="3"
+                                    CornerRadius="1.5"
+                                    Background="{DynamicResource SystemControlHighlightAccentBrush}"
+                                    Opacity="0" />
+                        </Grid>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}" />
+                                <Setter TargetName="Indicator" Property="Opacity" Value="1" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 每页内容的统一尺寸：太宽不好读；给个最小宽度，否则输入框会缩成一条 -->
+        <Style x:Key="SettingsPanelStyle" TargetType="StackPanel">
+            <Setter Property="MinWidth" Value="520" />
+            <Setter Property="MaxWidth" Value="620" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Margin" Value="0,16,24,8" />
+        </Style>
+    </Page.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <!-- 标题 -->
+            <RowDefinition Height="Auto" />
+            <!-- 顶部页签 -->
+            <RowDefinition Height="*" />
+            <!-- 当前页内容 -->
+            <RowDefinition Height="Auto" />
+            <!-- 固定操作栏 -->
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="系统设置"
+                   Style="{StaticResource HeaderTextBlockStyle}"
+                   Margin="0,0,0,8" />
+
+        <!-- ───────────── 顶部页签 ───────────── -->
+        <Border Grid.Row="1"
+                BorderThickness="0,0,0,1"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+            <StackPanel Orientation="Horizontal">
+                <RadioButton x:Name="NavGeneral"
+                             Content="通用"
+                             Tag="General"
+                             GroupName="SettingsNav"
+                             IsChecked="True"
+                             Style="{StaticResource SettingsNavItemStyle}"
+                             Checked="Nav_Checked" />
+                <RadioButton x:Name="NavPrivacy"
+                             Content="隐私与记录"
+                             Tag="Privacy"
+                             GroupName="SettingsNav"
+                             Style="{StaticResource SettingsNavItemStyle}"
+                             Checked="Nav_Checked" />
+                <RadioButton x:Name="NavMcp"
+                             Content="智能体接入"
+                             Tag="Mcp"
+                             GroupName="SettingsNav"
+                             Style="{StaticResource SettingsNavItemStyle}"
+                             Checked="Nav_Checked" />
+                <RadioButton x:Name="NavExtensions"
+                             Content="扩展"
+                             Tag="Extensions"
+                             GroupName="SettingsNav"
+                             Style="{StaticResource SettingsNavItemStyle}"
+                             Checked="Nav_Checked" />
+                <RadioButton x:Name="NavAccount"
+                             Content="账号安全"
+                             Tag="Account"
+                             GroupName="SettingsNav"
+                             Style="{StaticResource SettingsNavItemStyle}"
+                             Checked="Nav_Checked" />
+            </StackPanel>
+        </Border>
+
+        <!-- ───────────── 内容区：四页叠放，只显示一个 ───────────── -->
+        <Grid Grid.Row="2">
+
+            <!-- ① 通用 -->
+            <ScrollViewer x:Name="PanelGeneral"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Style="{StaticResource SettingsPanelStyle}">
+                    <ui:SimpleStackPanel Spacing="18">
+                        <ui:ToggleSwitch Header="深色主题"
+                                         x:Name="ThemeToggle"
+                                         Toggled="ThemeToggle_Toggled" />
+
+                        <StackPanel>
+                            <TextBlock Text="默认管理后台地址"
+                                       Style="{StaticResource CaptionTextBlockStyle}" />
+                            <TextBox x:Name="DefaultUrlTextBox" />
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Text="配置文件目录"
+                                       Style="{StaticResource CaptionTextBlockStyle}" />
+                            <TextBox x:Name="ConfigPathTextBox"
+                                     IsReadOnly="True" />
+                            <Button Content="打开配置目录"
+                                    Margin="0,8,0,0"
+                                    HorizontalAlignment="Left"
+                                    Click="OpenConfigFolder_Click" />
+                        </StackPanel>
+                    </ui:SimpleStackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ② 隐私与记录 -->
+            <ScrollViewer x:Name="PanelPrivacy"
+                          Visibility="Collapsed"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Style="{StaticResource SettingsPanelStyle}">
+                    <ui:SimpleStackPanel Spacing="20">
+                        <StackPanel>
+                            <ui:ToggleSwitch x:Name="CaptureCredentialToggle"
+                                             Header="检测到登录信息时提示保存到密码箱" />
+                            <TextBlock Text="在内置 Web 控制台里手动登录时，自动询问是否把账号密码记入密码箱（密码以 Windows DPAPI 加密保存）。"
+                                       Style="{StaticResource ItemCaptionTextBlockStyle}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <StackPanel>
+                            <ui:ToggleSwitch x:Name="RecordHistoryToggle"
+                                             Header="记录网页访问历史" />
+                            <TextBlock Text="记录在内置控制台打开过的地址与标题，最多保留 300 个地址；可在「访问记录」页查看与清空。关闭后不再写入新记录。"
+                                       Style="{StaticResource ItemCaptionTextBlockStyle}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+                    </ui:SimpleStackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ③ 智能体接入（MCP） -->
+            <ScrollViewer x:Name="PanelMcp"
+                          Visibility="Collapsed"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Style="{StaticResource SettingsPanelStyle}">
+                    <TextBlock Text="让本机的 AI 智能体（Claude Desktop、CodeBuddy、Cline 等）管理这里已经保存的服务器。服务器密码不会出现在任何返回内容里；智能体的每一次调用都会记进审计日志。"
+                               Style="{StaticResource ItemCaptionTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,4" />
+
+                    <ui:SimpleStackPanel Spacing="18" Margin="0,14,0,0">
+                        <StackPanel>
+                            <ui:ToggleSwitch x:Name="McpAllowWriteToggle"
+                                             Header="允许智能体执行变更操作" />
+                            <TextBlock Text="打开后智能体可以通过 SSH 执行命令、通过 SFTP 写入文件；关闭时只能查看服务器列表、实时指标和文件内容。默认关闭。"
+                                       Style="{StaticResource ItemCaptionTextBlockStyle}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <StackPanel>
+                            <ui:ToggleSwitch x:Name="McpHttpToggle"
+                                             Header="启动本地 MCP 服务（HTTP）" />
+                            <TextBlock Text="只监听 127.0.0.1，局域网访问不到，每个请求都要带下面的访问令牌。不开这个也能用：客户端以 --mcp-stdio 方式拉起本程序即可，不需要端口和令牌。"
+                                       Style="{StaticResource ItemCaptionTextBlockStyle}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Text="HTTP 端口" Style="{StaticResource CaptionTextBlockStyle}" />
+                            <TextBox x:Name="McpPortTextBox"
+                                     MaxWidth="160"
+                                     HorizontalAlignment="Left"
+                                     Margin="0,4,0,0" />
+                            <TextBlock x:Name="McpStatusTextBlock"
+                                       Style="{StaticResource ItemCaptionTextBlockStyle}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,6,0,0" />
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Text="访问令牌（HTTP 方式需要）"
+                                       Style="{StaticResource CaptionTextBlockStyle}" />
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="McpTokenTextBox"
+                                         Grid.Column="0"
+                                         IsReadOnly="True"
+                                         FontFamily="Consolas"
+                                         FontSize="12"
+                                         TextWrapping="Wrap" />
+                                <Button Grid.Column="1"
+                                        Content="复制"
+                                        Margin="8,0,0,0"
+                                        Click="CopyMcpToken_Click" />
+                                <Button Grid.Column="2"
+                                        Content="重置"
+                                        Margin="8,0,0,0"
+                                        Click="ResetMcpToken_Click" />
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Text="客户端配置（复制后粘进智能体的 MCP 配置文件）"
+                                       Style="{StaticResource CaptionTextBlockStyle}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <Button Content="复制 stdio 配置（推荐）"
+                                        Click="CopyStdioConfig_Click" />
+                                <Button Content="复制 HTTP 配置"
+                                        Margin="8,0,0,0"
+                                        Click="CopyHttpConfig_Click" />
+                            </StackPanel>
+                            <Button Content="打开审计日志目录"
+                                    Margin="0,8,0,0"
+                                    HorizontalAlignment="Left"
+                                    Click="OpenAuditLogFolder_Click" />
+                        </StackPanel>
+                    </ui:SimpleStackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ④ 扩展（插件式：安装 / 停用 / 卸载） -->
+            <ScrollViewer x:Name="PanelExtensions"
+                          Visibility="Collapsed"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Style="{StaticResource SettingsPanelStyle}">
+                    <TextBlock Text="扩展是给程序加命令的插件：装好后命令会出现在服务器详情页顶部，也能被智能体当成 MCP 工具调用。扩展只描述「在服务器上跑什么命令」，走的是原有 SSH 通道 —— 写权限开关、审计日志、超时控制一样生效。"
+                               Style="{StaticResource ItemCaptionTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,10" />
+
+                    <!-- 操作条 -->
+                    <ui:SimpleStackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="安装扩展包…"
+                                Style="{StaticResource AccentButtonStyle}"
+                                Click="InstallExtensionPackage_Click"
+                                ToolTip="支持 .zip 扩展包，或单个 .json 清单" />
+                        <Button Content="打开扩展目录" Click="OpenExtensionsFolder_Click" />
+                        <Button Content="刷新" Click="ReloadExtensions_Click" />
+                    </ui:SimpleStackPanel>
+
+                    <TextBlock x:Name="ExtensionHintTextBlock"
+                               Style="{StaticResource ItemCaptionTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="0,10,0,0" />
+
+                    <!-- ───── 已安装 ───── -->
+                    <TextBlock Text="已安装"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Margin="0,18,0,6" />
+
+                    <ItemsControl x:Name="InstalledExtensionsList">
+                        <ItemsControl.ItemContainerStyle>
+                            <Style TargetType="ContentPresenter">
+                                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderThickness="1"
+                                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                                        CornerRadius="8"
+                                        Padding="12"
+                                        Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0"
+                                                Width="36" Height="36"
+                                                CornerRadius="18"
+                                                Margin="0,2,12,0"
+                                                VerticalAlignment="Top"
+                                                Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+                                            <TextBlock Text="{Binding Initial}"
+                                                       FontSize="15"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center" />
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1">
+                                            <ui:SimpleStackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding VersionText}"
+                                                           FontSize="12"
+                                                           Opacity="0.55"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding StatusText}"
+                                                           FontSize="12"
+                                                           Foreground="{Binding StatusBrush}"
+                                                           VerticalAlignment="Center" />
+                                            </ui:SimpleStackPanel>
+
+                                            <TextBlock Text="{Binding Summary}"
+                                                       Style="{StaticResource ItemCaptionTextBlockStyle}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,3,0,0" />
+                                        </StackPanel>
+
+                                        <ui:SimpleStackPanel Grid.Column="2"
+                                                             Orientation="Horizontal"
+                                                             Spacing="6"
+                                                             Margin="12,0,0,0"
+                                                             VerticalAlignment="Top">
+                                            <Button Content="{Binding ToggleText}"
+                                                    Tag="{Binding}"
+                                                    Padding="10,4"
+                                                    Click="ToggleExtension_Click" />
+                                            <Button Content="卸载"
+                                                    Tag="{Binding}"
+                                                    Padding="10,4"
+                                                    Click="UninstallExtension_Click" />
+                                            <Button Content="打开文件夹"
+                                                    Tag="{Binding}"
+                                                    Padding="10,4"
+                                                    Click="OpenExtensionFolder_Click" />
+                                        </ui:SimpleStackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock x:Name="NoExtensionTextBlock"
+                               Text="还没有安装任何扩展。可以从下面的「推荐扩展」装一个，或点「安装扩展包…」选择 .zip / .json 文件。"
+                               Style="{StaticResource ItemCaptionTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="0,2,0,0" />
+
+                    <!-- ───── 推荐（离线"商店"） ───── -->
+                    <TextBlock Text="推荐扩展"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Margin="0,22,0,6" />
+
+                    <ItemsControl x:Name="CatalogExtensionsList">
+                        <ItemsControl.ItemContainerStyle>
+                            <Style TargetType="ContentPresenter">
+                                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderThickness="1"
+                                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                                        CornerRadius="8"
+                                        Padding="12"
+                                        Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0"
+                                                Width="36" Height="36"
+                                                CornerRadius="18"
+                                                Margin="0,2,12,0"
+                                                VerticalAlignment="Top"
+                                                Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+                                            <TextBlock Text="{Binding Initial}"
+                                                       FontSize="15"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center" />
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1">
+                                            <ui:SimpleStackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding VersionText}"
+                                                           FontSize="12"
+                                                           Opacity="0.55"
+                                                           VerticalAlignment="Center" />
+                                            </ui:SimpleStackPanel>
+
+                                            <TextBlock Text="{Binding Description}"
+                                                       Style="{StaticResource ItemCaptionTextBlockStyle}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,3,0,0" />
+                                        </StackPanel>
+
+                                        <Button Grid.Column="2"
+                                                Content="{Binding ActionText}"
+                                                Tag="{Binding}"
+                                                IsEnabled="{Binding CanInstall}"
+                                                Padding="12,4"
+                                                Margin="12,0,0,0"
+                                                VerticalAlignment="Top"
+                                                Click="InstallBuiltInExtension_Click" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- ───── 手动创建（高级） ───── -->
+                    <Expander Header="手动创建扩展（高级）" Margin="0,20,0,0">
+                        <StackPanel Margin="0,8,0,0">
+                            <TextBlock Text="扩展目录"
+                                       Style="{StaticResource CaptionTextBlockStyle}" />
+                            <TextBox x:Name="ExtensionPathTextBox"
+                                     IsReadOnly="True"
+                                     Margin="0,4,0,0" />
+
+                            <TextBlock Text="把一个 extension.json 放进 extensions\&lt;目录名&gt;\，或存成 extensions\&lt;名字&gt;.json，点上面的「刷新」即可。下面是可直接抄的模板。"
+                                       Style="{StaticResource ItemCaptionTextBlockStyle}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,10,0,6" />
+
+                            <TextBox x:Name="ExtensionSampleTextBox"
+                                     IsReadOnly="True"
+                                     AcceptsReturn="True"
+                                     TextWrapping="NoWrap"
+                                     FontFamily="Consolas"
+                                     FontSize="12"
+                                     Height="220"
+                                     VerticalScrollBarVisibility="Auto"
+                                     HorizontalScrollBarVisibility="Auto" />
+
+                            <TextBlock Text="要点：id 只能用小写字母/数字/下划线/短横线；${参数名} 会被替换成 shell 安全引用后的值（模板里不要再加引号）；writeAccess=false 的命令是只读的，智能体不用开写权限就能调用。"
+                                       Style="{StaticResource ItemCaptionTextBlockStyle}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,6,0,0" />
+                        </StackPanel>
+                    </Expander>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ⑤ 账号安全 -->
+            <ScrollViewer x:Name="PanelAccount"
+                          Visibility="Collapsed"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Style="{StaticResource SettingsPanelStyle}">
+                    <TextBlock x:Name="DefaultPasswordHintTextBlock"
+                               TextWrapping="Wrap"
+                               Foreground="#E8A33D"
+                               Visibility="Collapsed"
+                               Text="当前账号仍在使用默认密码，建议立即修改。" />
+
+                    <TextBlock x:Name="CurrentUserTextBlock"
+                               Style="{StaticResource ItemCaptionTextBlockStyle}"
+                               Margin="0,8,0,0" />
+
+                    <StackPanel Margin="0,16,0,0">
+                        <TextBlock Text="当前密码" Style="{StaticResource CaptionTextBlockStyle}" />
+                        <controls:SecretBox x:Name="CurrentPasswordBox"
+                                            Margin="0,4,0,14"
+                                            PasswordChanged="PasswordField_Changed" />
+
+                        <TextBlock Text="新密码（至少 8 位，需同时包含字母和数字）"
+                                   Style="{StaticResource CaptionTextBlockStyle}" />
+                        <controls:SecretBox x:Name="NewPasswordBox"
+                                            Margin="0,4,0,14"
+                                            PasswordChanged="PasswordField_Changed" />
+
+                        <TextBlock Text="确认新密码" Style="{StaticResource CaptionTextBlockStyle}" />
+                        <controls:SecretBox x:Name="ConfirmPasswordBox"
+                                            Margin="0,4,0,14"
+                                            PasswordChanged="PasswordField_Changed" />
+
+                        <TextBlock x:Name="PasswordHintTextBlock"
+                                   Foreground="#D13438"
+                                   TextWrapping="Wrap"
+                                   Visibility="Collapsed" />
+
+                        <Button x:Name="ChangePasswordButton"
+                                Content="修改密码"
+                                Margin="0,14,0,0"
+                                HorizontalAlignment="Left"
+                                Click="ChangePasswordButton_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- ───────────── 固定操作栏 ───────────── -->
+        <!--
+            保存按钮刻意固定在这里，而不是留在某一页里：
+            它保存的是**全部**设置（含 MCP 开关与端口），
+            分页后如果还挂在第一页，用户在别的页改完会不知道该去哪儿保存。
+        -->
+        <Border Grid.Row="3"
+                BorderThickness="0,1,0,0"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                Margin="0,8,0,0">
+            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                <Button Content="保存设置"
+                        Style="{StaticResource AccentButtonStyle}"
+                        Click="SaveButton_Click" />
+                <TextBlock x:Name="SaveHintTextBlock"
+                           Style="{StaticResource ItemCaptionTextBlockStyle}"
+                           VerticalAlignment="Center"
+                           Margin="14,0,0,0"
+                           Text="修改后点此保存（立即生效）" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Page>

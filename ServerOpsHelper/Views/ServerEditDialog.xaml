@@ -1,0 +1,55 @@
+<ui:ContentDialog x:Class="ServerOpsHelper.Views.ServerEditDialog"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:ui="http://schemas.modernwpf.com/2019"
+                  Title="编辑服务器">
+
+    <!-- 字段较多，套一层可滚动的容器，避免窗口矮时下方字段被裁掉；右侧同样留出滚动条宽度 -->
+    <ScrollViewer MaxHeight="520"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <Grid Width="420" Margin="0,0,16,0">
+        <StackPanel>
+            <TextBlock Text="名称" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBox x:Name="NameTextBox" Margin="0,4,0,12" />
+
+            <TextBlock Text="主机地址 / IP" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBox x:Name="HostTextBox" Margin="0,4,0,12" />
+
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                    <TextBlock Text="端口" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBox x:Name="PortTextBox" Text="22" />
+                </StackPanel>
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="系统类型" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <ComboBox x:Name="OsTypeComboBox" Width="120">
+                        <ComboBoxItem Content="Linux" />
+                        <ComboBoxItem Content="Windows" />
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+
+            <TextBlock Text="用户名" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBox x:Name="UsernameTextBox" Margin="0,4,0,12" />
+
+            <TextBlock Text="密码（DPAPI 加密存储）" Style="{StaticResource CaptionTextBlockStyle}" />
+            <PasswordBox x:Name="PasswordBox" Margin="0,4,0,12" />
+
+            <TextBlock Text="标签（逗号分隔，可选）" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBox x:Name="TagsTextBox" Margin="0,4,0,12" />
+
+            <TextBlock Text="备注" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBox x:Name="DescriptionTextBox"
+                     AcceptsReturn="True"
+                     Height="64"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto" />
+        </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</ui:ContentDialog>

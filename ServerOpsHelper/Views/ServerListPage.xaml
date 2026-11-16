@@ -1,0 +1,125 @@
+<Page x:Class="ServerOpsHelper.Views.ServerListPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.modernwpf.com/2019"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      mc:Ignorable="d"
+      Title="服务器列表">
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 页面标题 -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="服务器列表"
+                       Style="{StaticResource HeaderTextBlockStyle}" />
+            <TextBlock Text="{Binding SummaryText}"
+                       Style="{StaticResource ItemCaptionTextBlockStyle}"
+                       Margin="0,4,0,0" />
+        </StackPanel>
+
+        <!-- 工具栏 -->
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <ui:AutoSuggestBox Grid.Column="0"
+                               x:Name="SearchBox"
+                               PlaceholderText="搜索名称、IP 或标签"
+                               QueryIcon="Find"
+                               Width="320"
+                               HorizontalAlignment="Left"
+                               Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}" />
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <ui:AppBarButton Icon="Refresh"
+                                 Label="刷新"
+                                 Click="RefreshButton_Click" />
+                <ui:AppBarButton Icon="Add"
+                                 Label="新增"
+                                 Click="AddButton_Click" />
+            </StackPanel>
+        </Grid>
+
+        <!-- 数据列表 -->
+        <Grid Grid.Row="2">
+            <ui:ListView x:Name="ServerListView"
+                         ItemsSource="{Binding Servers}"
+                         SelectedItem="{Binding SelectedServer}"
+                         SelectionMode="Single"
+                         IsItemClickEnabled="True"
+                         ItemClick="ServerListView_ItemClick">
+            <ui:ListView.ItemTemplate>
+                <DataTemplate>
+                    <Grid Margin="8,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 系统图标 -->
+                        <Viewbox Grid.Column="0" Width="32" Height="32" Margin="0,0,12,0">
+                            <TextBlock Text="{Binding OsType, Converter={StaticResource OsTypeToIconConverter}}"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="24" />
+                        </Viewbox>
+
+                        <!-- 主要信息 -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Name}"
+                                       Style="{StaticResource SubtitleTextBlockStyle}" />
+                            <TextBlock Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0}:{1} | {2}">
+                                        <Binding Path="Host" />
+                                        <Binding Path="Port" />
+                                        <Binding Path="Username" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                            <TextBlock Text="{Binding Description}"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+
+                        <!-- 操作按钮 -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                            <ui:AppBarButton Icon="Edit"
+                                             Label="编辑"
+                                             Tag="{Binding}"
+                                             Click="EditButton_Click" />
+                            <ui:AppBarButton Icon="Play"
+                                             Label="连接"
+                                             Tag="{Binding}"
+                                             Click="ConnectButton_Click" />
+                            <ui:AppBarButton Icon="Delete"
+                                             Label="删除"
+                                             Tag="{Binding}"
+                                             Click="DeleteButton_Click" />
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </ui:ListView.ItemTemplate>
+            </ui:ListView>
+
+            <!-- 空状态提示 -->
+            <TextBlock Text="{Binding EmptyHint}"
+                       Width="420"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                       Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}" />
+        </Grid>
+    </Grid>
+</Page>

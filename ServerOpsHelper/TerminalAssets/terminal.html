@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>SSH 终端</title>
+<link rel="stylesheet" href="xterm.css">
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    width: 100%; height: 100%;
+    background: #14181d;
+    overflow: hidden;
+  }
+  /* xterm 容器撑满整个终端区域 */
+  #term-host {
+    width: 100%; height: 100%;
+    padding: 6px;
+    box-sizing: border-box;
+  }
+  #term-host .xterm {
+    height: 100%;
+  }
+</style>
+</head>
+<body>
+<div id="term-host"></div>
+<script src="xterm.js"></script>
+<script src="addon-fit.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var host = document.getElementById('term-host');
+
+  var term = new Terminal({
+    fontFamily: 'Cascadia Mono, Consolas, "Microsoft YaHei Mono", monospace',
+    fontSize: 14,
+    lineHeight: 1.1,
+    cursorBlink: true,
+    cursorStyle: 'bar',
+    scrollback: 5000,
+    allowProposedApi: true,
+    theme: {
+      background: '#14181d',
+      foreground: '#d8dee9',
+      cursor: '#88c0d0',
+      cursorAccent: '#14181d',
+      selectionBackground: '#4c566a',
+      black: '#3b4252', red: '#bf616a', green: '#a3be8c', yellow: '#ebcb8b',
+      blue: '#81a1c1', magenta: '#b48ead', cyan: '#88c0d0', white: '#e5e9f0',
+      brightBlack: '#4c566a', brightRed: '#bf616a', brightGreen: '#a3be8c',
+      brightYellow: '#ebcb8b', brightBlue: '#81a1c1', brightMagenta: '#b48ead',
+      brightCyan: '#8fbcbb', brightWhite: '#eceff4'
+    }
+  });
+
+  var fit = new FitAddon.FitAddon();
+  term.loadAddon(fit);
+  term.open(host);
+
+  function fitNow() {
+    try { fit.fit(); } catch (e) { /* 容器尺寸未就绪时忽略，ResizeObserver 会再触发 */ }
+  }
+  fitNow();
+
+  // 容器尺寸变化时重新适配，并把新的行列数同步给 SSH（stty）
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(function () { fitNow(); }).observe(host);
+  }
+  window.addEventListener('resize', fitNow);
+
+  // JS → C#：键入（含方向键/Tab/Ctrl 组合的转义序列）、尺寸
+  function post(msg) {
+    try { window.chrome.webview.postMessage(msg); } catch (e) { /* 宿主不可用时忽略 */ }
+  }
+  term.onData(function (d) { post({ type: 'input', data: d }); });
+  term.onBinary(function (d) { post({ type: 'input', data: d }); });
+  term.onResize(function (size) {
+    post({ type: 'resize', cols: size.cols, rows: size.rows });
+  });
+
+  // C# → JS：SSH 输出写进终端；状态行直接以注释色写入
+  window.chrome.webview.addEventListener('message', function (e) {
+    var m = e.data;
+    if (!m || typeof m !== 'object') { return; }
+    if (m.type === 'output' && typeof m.data === 'string') {
+      term.write(m.data);
+    } else if (m.type === 'status' && typeof m.data === 'string') {
+      term.write('\x1b[38;5;245m[ ' + m.data + ' ]\x1b[0m\r\n');
+    }
+  });
+
+  // 通知宿主终端就绪，附上初始行列数（宿主据此发起 SSH 连接）
+  post({ type: 'ready', cols: term.cols, rows: term.rows });
+})();
+</script>
+</body>
+</html>
