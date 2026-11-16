@@ -42,6 +42,9 @@ public partial class SettingsPage : Page
 
         ConfigPathTextBox.Text = _configService.ConfigDirectory;
 
+        DownloadDirTextBox.Text = settings.DownloadDirectory;
+        ConfirmDangerDownloadToggle.IsOn = settings.ConfirmDangerousDownload;
+
         LoadMcpSection(settings);
         LoadExtensionsSection();
 
@@ -114,6 +117,8 @@ public partial class SettingsPage : Page
         settings.Theme = ThemeToggle.IsOn ? "Dark" : "Light";
         settings.CaptureCredentials = CaptureCredentialToggle.IsOn;
         settings.RecordVisitHistory = RecordHistoryToggle.IsOn;
+        settings.DownloadDirectory = DownloadDirTextBox.Text.Trim();
+        settings.ConfirmDangerousDownload = ConfirmDangerDownloadToggle.IsOn;
         settings.McpHttpEnabled = McpHttpToggle.IsOn;
         settings.McpHttpPort = mcpPort;
         settings.McpAllowWriteTools = McpAllowWriteToggle.IsOn;
@@ -381,6 +386,18 @@ public partial class SettingsPage : Page
         }
 
         return string.Join(" · ", parts);
+    }
+
+    private void PickDownloadDir_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "选择浏览器下载目录",
+        };
+        if (dialog.ShowDialog(Window.GetWindow(this)) == true)
+        {
+            DownloadDirTextBox.Text = dialog.FolderName;
+        }
     }
 
     private void InstallExtensionPackage_Click(object sender, RoutedEventArgs e)

@@ -254,6 +254,64 @@ public partial class WebConsolePage : UserControl
     private TabWebView? ActiveView => ActiveTab is { } tab && _views.TryGetValue(tab, out var v) ? v : null;
 
     /// <summary>
+    /// 当前活动标签可用的 CoreWebView2（未创建 / 已崩溃则为 null）。
+    /// 供下载、扩展、清除数据等"作用于当前页"的功能使用。
+    /// </summary>
+    internal CoreWebView2? ActiveCore
+    {
+        get
+        {
+            var view = ActiveView;
+            if (view == null || view.ProcessFailed)
+            {
+                return null;
+            }
+
+            try
+            {
+                return view.View?.CoreWebView2;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 任意一个已经就绪的标签的 CoreWebView2。
+    /// 扩展是 profile 级的、所有标签共享，所以活动标签没就绪时拿别的标签也一样。
+    /// </summary>
+    internal CoreWebView2? FirstReadyCore
+    {
+        get
+        {
+            foreach (var view in _views.Values)
+            {
+                if (view.ProcessFailed)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var core = view.View?.CoreWebView2;
+                    if (core != null)
+                    {
+                        return core;
+                    }
+                }
+                catch (Exception)
+                {
+                    // 这个标签崩了，看下一个
+                }
+            }
+
+            return null;
+        }
+    }
+
+    /// <summary>
     /// 当前标签关联的常用链接（用于填充账号密码）
     /// </summary>
     private LinkItem? CurrentLink => ActiveTab?.Link;
@@ -391,6 +449,11 @@ public partial class WebConsolePage : UserControl
         VisitHistoryService.Instance.Configure(settings.RecordVisitHistory);
         _captureEnabled = settings.CaptureCredentials;
         _fillAidEnabled = settings.FillHighlightAid;
+
+        // 下载服务：下载目录从设置读（每次取现读，改完设置立即生效），危险文件提示开关同步
+        DownloadService.Instance.Configure(
+            () => ConfigService.Instance.LoadSettings().DownloadDirectory,
+            settings.ConfirmDangerousDownload);
 
         // 主窗口被拖动 / 改大小时，贴着 ☰ 弹出的下拉窗位置就不对了，直接关掉
         var host = Window.GetWindow(this);
@@ -544,6 +607,7 @@ public partial class WebConsolePage : UserControl
             core.HistoryChanged += (s, e) => SyncTabLocation(wrapper);
             core.DocumentTitleChanged += (s, e) => SyncTabLocation(wrapper);
             core.ProcessFailed += (s, e) => OnBrowserProcessFailed(wrapper, e);
+            core.DownloadStarting += OnDownloadStarting;
 
             await core.AddScriptToExecuteOnDocumentCreatedAsync(CredentialCaptureScript);
 
@@ -784,6 +848,70 @@ public partial class WebConsolePage : UserControl
     }
 
     /// <summary>
+    /// 浏览器下载开始：接管默认下载对话框，把文件落到统一目录并跟踪进度。
+    /// <para>
+    /// 这个事件是同步的，弹窗只能用系统原生的 MessageBox（UI 线程安全、不会被 WebView2
+    /// 原生子窗口盖住）。危险文件先确认，用户取消就把 DownloadOperation 中断掉。
+    /// </para>
+    /// </summary>
+    private void OnDownloadStarting(object? sender, CoreWebView2DownloadStartingEventArgs e)
+    {
+        var operation = e.DownloadOperation;
+        // WebView2 在 ResultFilePath 里预填了它建议的下载路径（含文件名），从中取出文件名。
+        var suggested = string.IsNullOrEmpty(e.ResultFilePath)
+            ? "download"
+            : Path.GetFileName(e.ResultFilePath);
+
+        var service = DownloadService.Instance;
+        var dangerous = service.IsDangerous(suggested);
+
+        if (dangerous && service.ConfirmDanger)
+        {
+            // 系统原生 MessageBox：UI 线程模态，不会被 WebView2 原生子窗口盖住。
+            // 拿 deferral 让 WebView2 在我们等待用户确认期间不要超时。
+            var deferral = e.GetDeferral();
+            try
+            {
+                var answer = MessageBox.Show(
+                    $"即将下载「{suggested}」\n来自：{operation.Uri}\n\n这是可执行文件或脚本，可能存在风险。确定要下载吗？",
+                    "危险文件下载提示",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning,
+                    MessageBoxResult.No);
+
+                if (answer != MessageBoxResult.Yes)
+                {
+                    e.Cancel = true;
+                    StatusTextBlock.Text = $"已取消下载「{suggested}」";
+                    return;
+                }
+            }
+            finally
+            {
+                deferral.Complete();
+            }
+        }
+
+        string targetPath;
+        try
+        {
+            targetPath = service.BuildTargetPath(suggested);
+        }
+        catch (Exception ex)
+        {
+            e.Cancel = true;
+            StatusTextBlock.Text = $"无法确定下载位置：{ex.Message}";
+            return;
+        }
+
+        e.ResultFilePath = targetPath;
+        e.Handled = true; // 关掉 WebView2 自带的下载气泡，进度统一在我们自己的面板里看
+
+        service.Register(operation, targetPath, dangerous);
+        StatusTextBlock.Text = $"开始下载「{Path.GetFileName(targetPath)}」→ {Path.GetDirectoryName(targetPath)}";
+    }
+
+    /// <summary>
     /// 导航完成：刷新当前标签的标题、记录访问历史、刷新视口提示，
     /// 宝塔面板链接还会自动尝试填充账号密码
     /// </summary>
@@ -978,7 +1106,12 @@ public partial class WebConsolePage : UserControl
     {
         try
         {
-            _environment = await CoreWebView2Environment.CreateAsync(null, _userDataFolder);
+            // 开启浏览器扩展（Edge/Chrome 插件）：不开的话 AddBrowserExtensionAsync 会报 ERROR_NOT_SUPPORTED。
+            var options = new CoreWebView2EnvironmentOptions
+            {
+                AreBrowserExtensionsEnabled = true,
+            };
+            _environment = await CoreWebView2Environment.CreateAsync(null, _userDataFolder, options);
             _environmentReady = true;
         }
         catch (Exception ex)
@@ -1286,6 +1419,64 @@ public partial class WebConsolePage : UserControl
     internal void InvokeBookmark() => BookmarkCurrentButton_Click(this, new RoutedEventArgs());
 
     internal void InvokeFitWidth() => FitWidthButton_Click(this, new RoutedEventArgs());
+
+    /// <summary>
+    /// 从工具菜单跳到外壳的功能页（History / Bookmarks 等常驻页面，不新建 WebView2）。
+    /// </summary>
+    internal void InvokeNavigate(string tag) => ShellNavigation.NavigateTo(tag);
+
+    /// <summary>
+    /// 打开下载管理面板（独立顶层窗口，避免被 WebView2 原生子窗口盖住）。
+    /// </summary>
+    internal void InvokeDownloads() => DownloadManagerWindow.ShowFor();
+
+    /// <summary>
+    /// 打开浏览器扩展管理面板。
+    /// </summary>
+    internal void InvokeExtensions() => _ = BrowserExtensionsWindow.ShowForAsync(this);
+
+    /// <summary>
+    /// 清除浏览数据（Cookie / 缓存）。WebView2 没有内建对话框，这里自己做确认。
+    /// </summary>
+    internal async void InvokeClearBrowsingData()
+    {
+        var confirmed = await Dialogs.ConfirmAsync(
+            "清除浏览数据",
+            "将清除所有站点的 Cookie、缓存和本地存储。\n各管理后台的登录态会失效，需要重新登录。\n\n访问记录（history.json）和常用链接不受影响。",
+            "清除",
+            danger: true);
+        if (!confirmed)
+        {
+            return;
+        }
+
+        var core = ActiveCore;
+        if (core == null)
+        {
+            StatusTextBlock.Text = "内置浏览器尚未就绪，暂时无法清除浏览数据。";
+            return;
+        }
+
+        try
+        {
+            // Profile.ClearBrowsingDataAsync 一次清掉 Cookie / 缓存 / DOM 存储。
+            // 这是 WebView2 1.0.4078 提供的标准 API，比逐个删更彻底也更省事。
+            var kinds = CoreWebView2BrowsingDataKinds.Cookies
+                        | CoreWebView2BrowsingDataKinds.DiskCache
+                        | CoreWebView2BrowsingDataKinds.CacheStorage
+                        | CoreWebView2BrowsingDataKinds.LocalStorage
+                        | CoreWebView2BrowsingDataKinds.IndexedDb
+                        | CoreWebView2BrowsingDataKinds.WebSql
+                        | CoreWebView2BrowsingDataKinds.FileSystems;
+            await core.Profile.ClearBrowsingDataAsync(kinds);
+
+            StatusTextBlock.Text = "已清除浏览数据（Cookie / 缓存 / 站点存储）。各后台需重新登录。";
+        }
+        catch (Exception ex)
+        {
+            StatusTextBlock.Text = $"清除浏览数据失败：{ex.Message}";
+        }
+    }
 
     /// <summary>
     /// 网页视觉辅助开关变化（来自 ☰ 下拉窗）：即时生效并写入设置持久化

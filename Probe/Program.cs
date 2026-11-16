@@ -355,6 +355,7 @@ internal static class Program
                     RunToolsDropDownReopenChecks(console, host);
                     RunSpaRouteChecks(console);
                     RunMultiWebViewChecks(console);
+                    RunBrowserFeatureChecks(console);
                 }
                 catch (Exception ex)
                 {
@@ -994,6 +995,94 @@ internal static class Program
             () => viewsField != null
                   && typeof(System.Collections.IDictionary).IsAssignableFrom(viewsField.FieldType),
             "_views 不存在或不是字典");
+    }
+
+    /// <summary>
+    /// 浏览器功能增强回归：下载接管、扩展管理、浏览数据清除、工具菜单入口、设置项。
+    /// 全部是静态/纯逻辑断言，不依赖真实 WebView2 运行时（沙箱里起不了 GUI）。
+    /// </summary>
+    private static void RunBrowserFeatureChecks(WebConsolePage page)
+    {
+        Log("── 浏览器功能增强 ──");
+
+        var pageType = typeof(WebConsolePage);
+        var asm = typeof(WebConsolePage).Assembly;
+
+        // ── 工具菜单入口 ──
+        foreach (var invoke in new[] { "InvokeNavigate", "InvokeDownloads", "InvokeExtensions", "InvokeClearBrowsingData" })
+        {
+            Check($"WebConsolePage 动作入口 {invoke} 存在",
+                () => pageType.GetMethod(invoke, BindingFlags.Instance | BindingFlags.NonPublic) != null,
+                $"找不到 {invoke}");
+        }
+
+        var toolsWindowType = asm.GetType("ServerOpsHelper.Views.ToolsDropDownWindow");
+        Check("工具下拉窗类型存在", () => toolsWindowType != null, "找不到 ToolsDropDownWindow");
+        foreach (var handler in new[]
+                 {
+                     "BookmarksPage_Click", "HistoryPage_Click", "Downloads_Click",
+                     "ClearData_Click", "Extensions_Click"
+                 })
+        {
+            Check($"工具菜单处理器 {handler} 存在",
+                () => toolsWindowType?.GetMethod(handler, BindingFlags.Instance | BindingFlags.NonPublic) != null,
+                $"找不到 {handler}");
+        }
+
+        // ── 下载 ──
+        Check("下载服务 DownloadService 可用", () => DownloadService.Instance != null, "单例取不到");
+
+        var downloadDir = DownloadService.DefaultDownloadDirectory;
+        Check("默认下载目录在 Downloads 下",
+            () => downloadDir.Contains("Downloads") && downloadDir.Contains("ServerOpsHelper"),
+            $"实际：{downloadDir}");
+
+        // 危险扩展名判定（正反例）
+        Check("危险文件识别：exe", () => DownloadService.Instance.IsDangerous("setup.exe"), "exe 未识别");
+        Check("危险文件识别：ps1", () => DownloadService.Instance.IsDangerous("deploy.ps1"), "ps1 未识别");
+        Check("普通文件不误判：pdf", () => !DownloadService.Instance.IsDangerous("manual.pdf"), "pdf 被误判为危险");
+
+        // 文件名防目录逃逸：..\ 之类不能跑出下载目录（注入临时目录，别碰真实下载目录）
+        var tempDownloadDir = Path.Combine(Path.GetTempPath(), "sopshelper_probe_download");
+        DownloadService.Instance.Configure(() => tempDownloadDir, true);
+        var builtPath = DownloadService.Instance.BuildTargetPath("..\\evil.txt");
+        Check("下载文件名做了路径清洗（无法逃出下载目录）",
+            () => Path.GetDirectoryName(builtPath) == Path.GetFullPath(tempDownloadDir)
+                  && Path.GetFileName(builtPath) == "evil.txt",
+            $"实际路径：{builtPath}");
+
+        Check("下载记录模型 DownloadRecord 可用",
+            () => typeof(DownloadRecord).GetProperty("Progress") != null
+                  && typeof(DownloadRecord).GetProperty("StatusText") != null,
+            "DownloadRecord 字段不全");
+
+        var downloadWindowType = asm.GetType("ServerOpsHelper.Views.DownloadManagerWindow");
+        Check("下载管理窗口类型存在", () => downloadWindowType != null, "找不到 DownloadManagerWindow");
+
+        Check("下载事件已订阅 OnDownloadStarting",
+            () => pageType.GetMethod("OnDownloadStarting", BindingFlags.Instance | BindingFlags.NonPublic) != null,
+            "找不到 OnDownloadStarting");
+
+        // ── 扩展 ──
+        var extWindowType = asm.GetType("ServerOpsHelper.Views.BrowserExtensionsWindow");
+        Check("浏览器扩展窗口类型存在", () => extWindowType != null, "找不到 BrowserExtensionsWindow");
+        Check("扩展项模型 BrowserExtensionItem 存在",
+            () => asm.GetType("ServerOpsHelper.Views.BrowserExtensionItem") != null,
+            "找不到 BrowserExtensionItem");
+        Check("扩展开关 FirstReadyCore 已暴露",
+            () => pageType.GetProperty("FirstReadyCore", BindingFlags.Instance | BindingFlags.NonPublic) != null,
+            "找不到 FirstReadyCore");
+
+        // 反向可见性转换器（下载列表用）
+        Check("反向可见性转换器已注册到 App.xaml",
+            () => Application.Current?.TryFindResource("InverseBoolToVisibilityConverter") != null,
+            "资源里找不到 InverseBoolToVisibilityConverter");
+
+        // ── 设置项 ──
+        Check("设置模型有 DownloadDirectory 字段",
+            () => typeof(AppSettings).GetProperty("DownloadDirectory") != null, "找不到 DownloadDirectory");
+        Check("设置模型有 ConfirmDangerousDownload 字段",
+            () => typeof(AppSettings).GetProperty("ConfirmDangerousDownload") != null, "找不到 ConfirmDangerousDownload");
     }
 
     // ───────────────────────── FRP 配置（TOML 往返）─────────────────────────

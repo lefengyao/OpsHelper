@@ -180,6 +180,38 @@
                                        TextWrapping="Wrap"
                                        Margin="0,4,0,0" />
                         </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Text="浏览器下载目录"
+                                       Style="{StaticResource ItemCaptionTextBlockStyle}"
+                                       Margin="0,0,0,4" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" x:Name="DownloadDirTextBox"
+                                         VerticalContentAlignment="Center"
+                                         ToolTip="留空则使用默认的 下载\ServerOpsHelper 目录" />
+                                <Button Grid.Column="1" Content="选择…"
+                                        Margin="8,0,0,0"
+                                        Padding="14,4"
+                                        Click="PickDownloadDir_Click" />
+                            </Grid>
+                            <TextBlock Text="内置浏览器下载的文件保存位置。留空使用默认值；目录不存在会自动创建。"
+                                       Style="{StaticResource ItemCaptionTextBlockStyle}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <StackPanel>
+                            <ui:ToggleSwitch x:Name="ConfirmDangerDownloadToggle"
+                                             Header="下载可执行文件时提示风险" />
+                            <TextBlock Text="下载 .exe / .msi / 脚本等文件时先弹窗确认。建议保持开启。"
+                                       Style="{StaticResource ItemCaptionTextBlockStyle}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
                     </ui:SimpleStackPanel>
                 </StackPanel>
             </ScrollViewer>

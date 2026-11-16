@@ -30,6 +30,16 @@ public class AppSettings
     /// </summary>
     public bool FillHighlightAid { get; set; } = true;
 
+    /// <summary>
+    /// 浏览器下载目录。为空时使用默认的 %USERPROFILE%\Downloads\ServerOpsHelper。
+    /// </summary>
+    public string DownloadDirectory { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 下载可执行文件时是否弹出风险提示（默认开，安全边界别随手关）。
+    /// </summary>
+    public bool ConfirmDangerousDownload { get; set; } = true;
+
     // ───────────────────────── 智能体接入（MCP） ─────────────────────────
 
     /// <summary>

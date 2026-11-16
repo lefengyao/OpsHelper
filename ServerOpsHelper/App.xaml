@@ -14,6 +14,7 @@
                  「模板所属文件 → 应用资源」查找，放在某个窗口的 Resources 里会解析不到 -->
             <converters:OsTypeToIconConverter x:Key="OsTypeToIconConverter" />
             <converters:LinkKindToIconConverter x:Key="LinkKindToIconConverter" />
+            <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" />
 
             <!-- 危险操作按钮样式，供 ContentDialog 使用 -->
             <Style x:Key="DangerButtonStyle"

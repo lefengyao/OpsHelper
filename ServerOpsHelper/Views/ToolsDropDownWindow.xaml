@@ -48,6 +48,34 @@
             <Button Style="{StaticResource DropMenuItemButton}"
                     Content="收藏当前页"
                     Click="Bookmark_Click" />
+            <Button Style="{StaticResource DropMenuItemButton}"
+                    Content="收藏夹管理"
+                    Click="BookmarksPage_Click"
+                    ToolTip="打开常用链接 / 收藏夹管理页（增删改查、在控制台或系统浏览器打开）" />
+            <Button Style="{StaticResource DropMenuItemButton}"
+                    Content="浏览记录"
+                    Click="HistoryPage_Click"
+                    ToolTip="打开访问记录页（按时间列出访问过的页面，可单条删除或清空）" />
+
+            <Separator Margin="6,8,6,4" />
+
+            <!-- 浏览数据 / 下载 / 扩展 -->
+            <TextBlock Text="浏览数据"
+                       Margin="10,2,10,4"
+                       FontSize="11.5"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" />
+            <Button Style="{StaticResource DropMenuItemButton}"
+                    Content="下载管理"
+                    Click="Downloads_Click"
+                    ToolTip="查看下载进度、打开下载文件、清空记录" />
+            <Button Style="{StaticResource DropMenuItemButton}"
+                    Content="清除浏览数据"
+                    Click="ClearData_Click"
+                    ToolTip="清除 Cookie / 缓存等站内浏览数据（登录态会失效）" />
+            <Button Style="{StaticResource DropMenuItemButton}"
+                    Content="浏览器扩展"
+                    Click="Extensions_Click"
+                    ToolTip="安装 / 启用 / 禁用 / 删除 Edge 浏览器插件" />
 
             <Separator Margin="6,8,6,4" />
 

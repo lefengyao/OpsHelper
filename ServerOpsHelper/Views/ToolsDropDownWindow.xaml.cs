@@ -68,6 +68,36 @@ public partial class ToolsDropDownWindow : Window
         _page.InvokeBookmark();
     }
 
+    private void BookmarksPage_Click(object sender, RoutedEventArgs e)
+    {
+        _page.NotifyToolsDropDownClosed();
+        _page.InvokeNavigate("Bookmarks");
+    }
+
+    private void HistoryPage_Click(object sender, RoutedEventArgs e)
+    {
+        _page.NotifyToolsDropDownClosed();
+        _page.InvokeNavigate("History");
+    }
+
+    private void Downloads_Click(object sender, RoutedEventArgs e)
+    {
+        _page.NotifyToolsDropDownClosed();
+        _page.InvokeDownloads();
+    }
+
+    private void ClearData_Click(object sender, RoutedEventArgs e)
+    {
+        _page.NotifyToolsDropDownClosed();
+        _page.InvokeClearBrowsingData();
+    }
+
+    private void Extensions_Click(object sender, RoutedEventArgs e)
+    {
+        _page.NotifyToolsDropDownClosed();
+        _page.InvokeExtensions();
+    }
+
     private void Fit_Click(object sender, RoutedEventArgs e)
     {
         _page.NotifyToolsDropDownClosed();
