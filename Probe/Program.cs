@@ -354,6 +354,7 @@ internal static class Program
                     RunToolsDropDownChecks(console, host);
                     RunToolsDropDownReopenChecks(console, host);
                     RunSpaRouteChecks(console);
+                    RunMultiWebViewChecks(console);
                 }
                 catch (Exception ex)
                 {
@@ -435,10 +436,15 @@ internal static class Program
 
     private static void RunToolsDropDownChecks(WebConsolePage page, Window window)
     {
-        var webView = Field<FrameworkElement>(page, "ConsoleWebView");
+        // WebView2 已改为「每标签一个」，运行时动态加进 WebViewHost 容器；
+        // 布局断言针对这个容器（它和旧的单个 ConsoleWebView 占同一格、同样的定位）
+        var webView = Field<FrameworkElement>(page, "WebViewHost");
         var statusBlock = Field<FrameworkElement>(page, "StatusTextBlock");
         var tabStripHost = Field<FrameworkElement>(page, "TabStripHost");
         var toolsToggle = Field<System.Windows.Controls.Primitives.ToggleButton>(page, "ToolsToggle");
+        var refreshButton = Field<Button>(page, "RefreshButton");
+
+        Check("工具栏有独立的「刷新」按钮", () => refreshButton != null, "找不到 RefreshButton");
 
         double Top(FrameworkElement e) => e.TransformToAncestor(page).Transform(new Point(0, 0)).Y;
 
@@ -935,6 +941,59 @@ internal static class Program
         Check("该链接只对应一个标签",
             () => page.Tabs.Count(t => t.Link?.Id == btLink.Id) == 1,
             $"有 {page.Tabs.Count(t => t.Link?.Id == btLink.Id)} 个");
+    }
+
+    /// <summary>
+    /// 多标签架构回归：每个标签必须是独立的 WebView2（独立 Core / 独立崩溃状态），
+    /// 而不是所有标签共用一个控件 —— 这正是"多页面串成一个页面 + 一个白屏带崩全部"的根因修复点。
+    /// </summary>
+    private static void RunMultiWebViewChecks(WebConsolePage page)
+    {
+        var pageType = typeof(WebConsolePage);
+
+        // 承载容器存在（各标签的 WebView2 动态加进来）
+        Check("存在每标签 WebView2 的承载容器 WebViewHost",
+            () => Field<FrameworkElement>(page, "WebViewHost") != null,
+            "找不到 WebViewHost");
+
+        // TabWebView 包装类型有独立的 Core / ProcessFailed / AutoFillAttempted 字段
+        var tabViewType = pageType.GetNestedType("TabWebView", BindingFlags.NonPublic);
+        Check("存在每标签独立的 TabWebView 包装类型", () => tabViewType != null, "找不到 TabWebView");
+
+        if (tabViewType != null)
+        {
+            var names = tabViewType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Select(p => p.Name)
+                .Concat(tabViewType.GetFields(BindingFlags.Public | BindingFlags.Instance).Select(f => f.Name))
+                .ToList();
+
+            Check("TabWebView 各自持有独立 Core", () => names.Contains("Core"), "没有 Core 属性");
+            Check("TabWebView 各自记录崩溃状态 ProcessFailed",
+                () => names.Contains("ProcessFailed"), "没有 ProcessFailed 属性");
+            Check("TabWebView 各自记录自动填充状态 AutoFillAttempted",
+                () => names.Contains("AutoFillAttempted"), "没有 AutoFillAttempted 属性");
+        }
+
+        // 关键方法都在（切可见性 / 确保 view / 释放 view / 刷新），防止哪天被误删回退成共享单实例
+        foreach (var method in new[] { "ShowOnlyView", "EnsureViewAsync", "ReleaseView", "ActivateTabAsync" })
+        {
+            Check($"多标签关键方法存在：{method}",
+                () => pageType.GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic) != null,
+                $"找不到 {method}");
+        }
+
+        // 刷新按钮的处理器存在
+        Check("刷新按钮处理器 RefreshButton_Click 存在",
+            () => pageType.GetMethod("RefreshButton_Click", BindingFlags.Instance | BindingFlags.NonPublic) != null,
+            "找不到 RefreshButton_Click");
+
+        // 每开一个标签，packages 里就多一个 view（用反射读私有 _views 字典；环境未初始化时不会真建 WebView2，
+        // 但这里只验结构存在，不依赖真实 WebView2 运行时）
+        var viewsField = pageType.GetField("_views", BindingFlags.Instance | BindingFlags.NonPublic);
+        Check("存在标签→WebView2 映射 _views",
+            () => viewsField != null
+                  && typeof(System.Collections.IDictionary).IsAssignableFrom(viewsField.FieldType),
+            "_views 不存在或不是字典");
     }
 
     // ───────────────────────── FRP 配置（TOML 往返）─────────────────────────

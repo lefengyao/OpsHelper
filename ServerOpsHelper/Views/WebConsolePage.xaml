@@ -27,6 +27,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <TextBox Grid.Column="0"
@@ -39,8 +40,16 @@
                     Click="NavigateButton_Click"
                     ToolTip="在当前标签里打开地址栏里的地址" />
 
+            <!-- 刷新：重新加载当前标签（每个标签是独立的 WebView2，只刷当前这个） -->
+            <Button Grid.Column="2"
+                    x:Name="RefreshButton"
+                    Content="刷新"
+                    Margin="6,0,0,0"
+                    Click="RefreshButton_Click"
+                    ToolTip="重新加载当前标签的页面（F5）" />
+
             <!-- ☰ 三条线：弹出竖向工具下拉窗（独立顶层窗口，不会被网页盖住） -->
-            <ToggleButton Grid.Column="2"
+            <ToggleButton Grid.Column="3"
                           x:Name="ToolsToggle"
                           Margin="8,0,0,0"
                           Width="38"
@@ -210,15 +219,15 @@
                    Text="输入管理后台地址后点击打开。" />
 
         <!--
-            WebView2 内容区。
-            注意：这个控件基于 HwndHost，网页是一个**原生子窗口**，按 Windows 规则永远画在
-            窗口内的 WPF 内容之上。所以不能用「窗口内浮层」式的对话框（ModernWpf 的 ContentDialog 就是），
-            否则对话框会被网页盖住 —— 这里的对话框一律用独立顶层窗口（见 CredentialCaptureWindow），
-            页面里的浮层（标签栏、近期访问面板）也都排在网页上方，不与之重叠；
+            WebView2 内容区：每个标签一个独立的 WebView2 实例，全部叠在这个容器里，
+            通过 Visibility 切换当前显示的那个（切标签不重新导航，页面状态各自保留；
+            某个页面白屏 / 崩溃也不连累其它标签）。容器本身基于 Grid，定位逻辑与原来一致。
+            注意：WebView2 基于 HwndHost，网页是**原生子窗口**，按 Windows 规则永远画在
+            窗口内的 WPF 内容之上。所以对话框一律用独立顶层窗口（见 CredentialCaptureWindow），
             ☰ 工具菜单同样是独立顶层下拉窗（见 ToolsDropDownWindow）。
         -->
-        <wv2:WebView2 Grid.Row="3"
-                      x:Name="ConsoleWebView"
-                      Margin="16,0,16,0" />
+        <Grid Grid.Row="3"
+              x:Name="WebViewHost"
+              Margin="16,0,16,0" />
     </Grid>
 </UserControl>

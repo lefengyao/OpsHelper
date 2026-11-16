@@ -1,4 +1,5 @@
 using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.Wpf;
 using ServerOpsHelper.Models;
 using ServerOpsHelper.Services;
 using ServerOpsHelper.ViewModels;
@@ -184,18 +185,20 @@ public partial class WebConsolePage : UserControl
     private readonly string _userDataFolder;
 
     /// <summary>
-    /// WebView2 是否已经初始化（初始化推迟到本页第一次真正可见时）
+    /// 所有标签共享的 WebView2 环境：同一个 userDataFolder，登录态 / Cookie 才能跨标签通用。
+    /// 每个标签有自己独立的 WebView2 控件与 CoreWebView2（独立导航栈、独立渲染、崩溃互不影响）。
     /// </summary>
-    private bool _webViewInitialized;
+    private CoreWebView2Environment? _environment;
 
     /// <summary>
-    /// WebView2 浏览器进程是否已崩溃。
-    /// <para>
-    /// 崩溃后 <c>CoreWebView2</c> 的 getter 每次访问都会抛异常，
-    /// 靠这个标志短路掉后续访问，并把提示说清楚（见 <see cref="TryGetCoreWebView2"/>）。
-    /// </para>
+    /// 环境是否已创建好（创建推迟到本页第一次真正可见时）
     /// </summary>
-    private bool _browserProcessFailed;
+    private bool _environmentReady;
+
+    /// <summary>
+    /// 标签 → 它自己的 WebView2 包装。常驻内存，切标签只切可见性、不销毁也不重新导航。
+    /// </summary>
+    private readonly Dictionary<BrowserTab, TabWebView> _views = new();
 
     /// <summary>
     /// WebView2 还没就绪时先记下要打开哪个标签，等就绪后补做导航
@@ -203,9 +206,22 @@ public partial class WebConsolePage : UserControl
     private BrowserTab? _pendingTab;
 
     /// <summary>
-    /// 自动填充每次导航只做一次，避免页面内跳转反复触发
+    /// 一个标签的 WebView2 实例及其独立状态。
+    /// 关键：**每个标签一个 WebView2**，这样一个页面白屏 / 崩溃不会连累其它标签，
+    /// 切回来也不必重新加载（滚动位置、表单、登录态都还在）。
     /// </summary>
-    private bool _autoFillAttempted;
+    private sealed class TabWebView
+    {
+        public required BrowserTab Tab { get; init; }
+        public required WebView2 View { get; init; }
+        public CoreWebView2? Core { get; set; }
+
+        /// <summary>这个标签的浏览器进程是否已崩（只影响自己）</summary>
+        public bool ProcessFailed { get; set; }
+
+        /// <summary>自动填充每次导航只做一次，按标签独立</summary>
+        public bool AutoFillAttempted { get; set; }
+    }
 
     /// <summary>
     /// 程序化调整缩放时抑制 ComboBox 的回调
@@ -233,9 +249,20 @@ public partial class WebConsolePage : UserControl
     private BrowserTab? ActiveTab => Tabs.FirstOrDefault(t => t.IsActive);
 
     /// <summary>
+    /// 当前活动标签的 WebView2 包装（可能尚未创建）
+    /// </summary>
+    private TabWebView? ActiveView => ActiveTab is { } tab && _views.TryGetValue(tab, out var v) ? v : null;
+
+    /// <summary>
     /// 当前标签关联的常用链接（用于填充账号密码）
     /// </summary>
     private LinkItem? CurrentLink => ActiveTab?.Link;
+
+    /// <summary>
+    /// 取指定标签的 WebView2 包装，没有就报错（调用方需先 EnsureViewAsync）
+    /// </summary>
+    private TabWebView? GetView(BrowserTab? tab)
+        => tab != null && _views.TryGetValue(tab, out var v) ? v : null;
 
     public WebConsolePage()
     {
@@ -290,9 +317,9 @@ public partial class WebConsolePage : UserControl
         // 放到 WebView2 初始化之后的话，初始化一慢列表就跟着一直空白
         await LoadRecentAsync();
 
-        if (!_webViewInitialized)
+        if (!_environmentReady)
         {
-            // WebView2 初始化偶发会卡住（运行时缺失、浏览器进程起不来），
+            // WebView2 环境创建偶发会卡住（运行时缺失、浏览器进程起不来），
             // 给个上限，超时就明说，不要让人对着空页面干等
             var initTask = InitializeWebView2Async();
             if (await Task.WhenAny(initTask, Task.Delay(TimeSpan.FromSeconds(10))) != initTask)
@@ -310,7 +337,7 @@ public partial class WebConsolePage : UserControl
         }
 
         _pendingTab = null;
-        NavigateTo(pending.Url);
+        await EnsureViewAsync(pending);
     }
 
     /// <summary>
@@ -421,13 +448,17 @@ public partial class WebConsolePage : UserControl
             tab.Link = link;
         }
 
-        ActivateTab(tab);
+        _ = ActivateTabAsync(tab);
     }
 
     /// <summary>
-    /// 切到某个标签：更新选中态、地址栏，并让 WebView2 导航过去
+    /// 切到某个标签：更新选中态、地址栏，把这个标签的 WebView2 显示出来。
+    /// <para>
+    /// 多标签的关键：每个标签有自己的 WebView2 与导航栈。切标签**只切可见性，不再导航、不再重新加载**，
+    /// 所以页面状态（滚动位置、表单、登录态）都还在，也不会出现"几个标签显示同一个页面"。
+    /// </para>
     /// </summary>
-    private void ActivateTab(BrowserTab tab)
+    private async Task ActivateTabAsync(BrowserTab tab)
     {
         foreach (var item in Tabs)
         {
@@ -435,47 +466,123 @@ public partial class WebConsolePage : UserControl
         }
 
         UrlTextBox.Text = tab.Url;
-        _autoFillAttempted = false;
 
-        if (!_webViewInitialized)
+        if (!_environmentReady)
         {
-            // WebView2 还没建起来（本页第一次真正可见时才会建），先记下来
+            // WebView2 环境还没建起来（本页第一次真正可见时才会建），先记下来
             _pendingTab = tab;
             StatusTextBlock.Text = $"正在准备内置浏览器，稍后打开 {tab.Url}";
             return;
         }
 
-        // 已经停在这个地址上就别再导航一次（重复点当前标签会白刷一遍页面）
-        if (IsAlreadyAt(tab.Url))
+        if (!await EnsureViewAsync(tab))
         {
             return;
         }
 
-        NavigateTo(tab.Url);
+        ShowOnlyView(tab);
     }
 
     /// <summary>
-    /// 内置浏览器当前是不是已经在这个地址上
+    /// 只显示指定标签的 WebView2，其余折叠。
+    /// 这些 WebView2 叠在 WebViewHost 同一格；HwndHost 必须折叠（不是透明）才能正确让出输入与绘制。
     /// </summary>
-    private bool IsAlreadyAt(string url)
+    private void ShowOnlyView(BrowserTab? tab)
     {
-        try
+        foreach (var view in _views.Values)
         {
-            var current = TryGetCoreWebView2()?.Source;
-            return !string.IsNullOrEmpty(current)
-                   && string.Equals(current, url, StringComparison.OrdinalIgnoreCase);
+            view.View.Visibility = ReferenceEquals(view.Tab, tab) ? Visibility.Visible : Visibility.Collapsed;
         }
-        catch (Exception)
+    }
+
+    /// <summary>
+    /// 确保标签有自己独立的 WebView2：首次打开时创建、订阅事件、导航到它的地址；
+    /// 已经存在则什么都不做（保留页面状态）。
+    /// </summary>
+    private async Task<bool> EnsureViewAsync(BrowserTab tab)
+    {
+        if (_views.TryGetValue(tab, out var existing))
         {
+            if (!existing.ProcessFailed)
+            {
+                return true; // 健康：保留页面状态，绝不重新加载
+            }
+
+            // 崩过的标签：先清掉旧的，再往下重建（其它标签不受影响）
+            WebViewHost.Children.Remove(existing.View);
+            try { existing.View.Dispose(); } catch (Exception) { /* 崩溃控件释放失败可忽略 */ }
+            _views.Remove(tab);
+        }
+
+        if (_environment == null)
+        {
+            StatusTextBlock.Text = "WebView2 尚未就绪，请稍候重试。";
             return false;
         }
+
+        var view = new WebView2
+        {
+            Visibility = Visibility.Collapsed,
+            // 和其他 WebView2 一样铺满 WebViewHost；DefaultBackgroundColor 跟随系统由 WebView2 自己处理
+        };
+
+        WebViewHost.Children.Add(view);
+
+        var wrapper = new TabWebView { Tab = tab, View = view };
+        _views[tab] = wrapper;
+
+        try
+        {
+            await view.EnsureCoreWebView2Async(_environment);
+            var core = view.CoreWebView2;
+            wrapper.Core = core;
+
+            core.Settings.IsWebMessageEnabled = true;
+            core.WebMessageReceived += OnWebMessageReceived;
+            core.NavigationCompleted += (s, e) => OnNavigationCompleted(wrapper, e);
+            core.SourceChanged += (s, e) => SyncTabLocation(wrapper);
+            core.HistoryChanged += (s, e) => SyncTabLocation(wrapper);
+            core.DocumentTitleChanged += (s, e) => SyncTabLocation(wrapper);
+            core.ProcessFailed += (s, e) => OnBrowserProcessFailed(wrapper, e);
+
+            await core.AddScriptToExecuteOnDocumentCreatedAsync(CredentialCaptureScript);
+
+            var url = LinkItem.NormalizeUrl(tab.Url);
+            if (url.Length > 0)
+            {
+                view.Source = new Uri(url);
+                StatusTextBlock.Text = $"正在打开 {url}";
+            }
+        }
+        catch (Exception ex)
+        {
+            wrapper.ProcessFailed = true;
+            StatusTextBlock.Text = $"打开「{tab.DisplayTitle}」失败：{ex.Message}";
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 关掉标签时把它自己的 WebView2 从视觉树和表里一起清掉，释放原生窗口资源。
+    /// </summary>
+    private void ReleaseView(BrowserTab tab)
+    {
+        if (!_views.Remove(tab, out var wrapper))
+        {
+            return;
+        }
+
+        WebViewHost.Children.Remove(wrapper.View);
+        wrapper.View.Dispose();
     }
 
     private void Tab_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (sender is FrameworkElement { Tag: BrowserTab tab } && !tab.IsActive)
         {
-            ActivateTab(tab);
+            _ = ActivateTabAsync(tab);
         }
     }
 
@@ -486,10 +593,11 @@ public partial class WebConsolePage : UserControl
             return;
         }
 
-        // 关掉标签只是不再显示它，访问历史照样留着
+        // 关掉标签：释放它自己的 WebView2（访问历史照样留着）
         var index = Tabs.IndexOf(tab);
         var wasActive = tab.IsActive;
         Tabs.Remove(tab);
+        ReleaseView(tab);
 
         if (!wasActive)
         {
@@ -504,7 +612,7 @@ public partial class WebConsolePage : UserControl
         }
 
         // 切到右边那个；关的是最后一个就切左边的
-        ActivateTab(Tabs[Math.Min(index, Tabs.Count - 1)]);
+        _ = ActivateTabAsync(Tabs[Math.Min(index, Tabs.Count - 1)]);
     }
 
     /// <summary>
@@ -539,7 +647,7 @@ public partial class WebConsolePage : UserControl
         {
             tab.Url = url;
             tab.Title = string.Empty;
-            ActivateTab(tab);
+            _ = NavigateActiveAsync(tab, url);
             return;
         }
 
@@ -547,9 +655,9 @@ public partial class WebConsolePage : UserControl
     }
 
     /// <summary>
-    /// 导航到指定地址（自动补齐协议头）
+    /// 在当前标签自己的 WebView2 里导航到指定地址（自动补齐协议头）
     /// </summary>
-    private void NavigateTo(string? rawUrl)
+    private async Task NavigateActiveAsync(BrowserTab tab, string? rawUrl)
     {
         var url = LinkItem.NormalizeUrl(rawUrl);
         if (url.Length == 0)
@@ -558,7 +666,69 @@ public partial class WebConsolePage : UserControl
             return;
         }
 
-        if (TryGetCoreWebView2() == null)
+        if (!_environmentReady)
+        {
+            _pendingTab = tab;
+            StatusTextBlock.Text = "WebView2 尚未就绪，请稍候重试。";
+            return;
+        }
+
+        if (!await EnsureViewAsync(tab))
+        {
+            return;
+        }
+
+        var view = GetView(tab);
+        if (view?.Core == null)
+        {
+            StatusTextBlock.Text = "WebView2 尚未就绪，请稍候重试。";
+            return;
+        }
+
+        ShowOnlyView(tab);
+
+        try
+        {
+            UrlTextBox.Text = url;
+            view.AutoFillAttempted = false;
+            view.View.Source = new Uri(url);
+            StatusTextBlock.Text = $"正在打开 {url}";
+        }
+        catch (UriFormatException)
+        {
+            StatusTextBlock.Text = $"地址格式不正确：{url}";
+        }
+    }
+
+    /// <summary>
+    /// 「刷新」：只重新加载当前标签自己的 WebView2，其它标签不受影响。
+    /// 若这个标签的浏览器进程崩过，则重建它的 WebView2 而不是只 Reload。
+    /// </summary>
+    private async void RefreshButton_Click(object sender, RoutedEventArgs e)
+    {
+        var tab = ActiveTab;
+        if (tab == null)
+        {
+            StatusTextBlock.Text = "当前没有打开的页面，请先打开一个地址。";
+            return;
+        }
+
+        var view = GetView(tab);
+
+        // 还没建过 / 崩过的标签：EnsureViewAsync 会创建（或重建）它自己的 WebView2
+        // —— 这就是"宝塔白屏后点刷新能自救、且不连累其它标签"的路径
+        if (view == null || view.ProcessFailed)
+        {
+            if (!await EnsureViewAsync(tab))
+            {
+                return;
+            }
+
+            ShowOnlyView(tab);
+            return;
+        }
+
+        if (view.Core == null)
         {
             StatusTextBlock.Text = "WebView2 尚未就绪，请稍候重试。";
             return;
@@ -566,14 +736,14 @@ public partial class WebConsolePage : UserControl
 
         try
         {
-            UrlTextBox.Text = url;
-            _autoFillAttempted = false;
-            ConsoleWebView.Source = new Uri(url);
-            StatusTextBlock.Text = $"正在打开 {url}";
+            view.AutoFillAttempted = false;
+            view.Core.Reload();
+            StatusTextBlock.Text = $"正在刷新「{tab.DisplayTitle}」…";
         }
-        catch (UriFormatException)
+        catch (Exception ex)
         {
-            StatusTextBlock.Text = $"地址格式不正确：{url}";
+            view.ProcessFailed = true;
+            StatusTextBlock.Text = $"刷新失败：{ex.Message}。可再点一次刷新重建页面。";
         }
     }
 
@@ -617,28 +787,31 @@ public partial class WebConsolePage : UserControl
     /// 导航完成：刷新当前标签的标题、记录访问历史、刷新视口提示，
     /// 宝塔面板链接还会自动尝试填充账号密码
     /// </summary>
-    private async void OnNavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+    private async void OnNavigationCompleted(TabWebView view, CoreWebView2NavigationCompletedEventArgs e)
     {
         if (!e.IsSuccess)
         {
             return;
         }
 
-        await ReportViewportAsync();
-        await RecordCurrentVisitAsync();
+        await ReportViewportAsync(view);
+        await RecordCurrentVisitAsync(view);
 
-        var link = CurrentLink;
+        var link = view.Tab.Link;
 
-        // 这里**不再要求** link.HasCredential：链接可能只有账号、密码在密码箱里，
+        // 只给**当前正在看的**标签自动填充：后台标签在别的标签页里导航完成，
+        // 这时往活动标签填密码会填错页面，所以直接跳过（等用户切回来看时按需手动填）。
+        // 同时这里**不再要求** link.HasCredential：链接可能只有账号、密码在密码箱里，
         // 到底有没有东西可填交给 ResolveCredentialAsync 判定。
-        // （原条件要求 HasCredential，看似等价，实则会把"链接只有账号"这种
-        //   最常见的半残状态直接排除掉，宝塔自动填充因此从来不填密码。）
-        if (_autoFillAttempted || link == null || link.Kind != LinkKind.BtPanel)
+        if (view.AutoFillAttempted
+            || !ReferenceEquals(view.Tab, ActiveTab)
+            || link == null
+            || link.Kind != LinkKind.BtPanel)
         {
             return;
         }
 
-        _autoFillAttempted = true;
+        view.AutoFillAttempted = true;
 
         // 给前端框架一点渲染登录框的时间
         await Task.Delay(600);
@@ -646,11 +819,11 @@ public partial class WebConsolePage : UserControl
     }
 
     /// <summary>
-    /// 把当前页面记进访问历史，同时把标题 / 地址同步到当前标签上
+    /// 把这个标签的页面记进访问历史，同时把标题 / 地址同步到它自己的标签上
     /// </summary>
-    private async Task RecordCurrentVisitAsync()
+    private async Task RecordCurrentVisitAsync(TabWebView view)
     {
-        var core = TryGetCoreWebView2();
+        var core = view.Core;
         if (core == null)
         {
             return;
@@ -670,12 +843,9 @@ public partial class WebConsolePage : UserControl
         }
 
         // 标签跟着页面走：页内跳转后，标签上的标题与地址也要更新
-        if (ActiveTab is { } tab)
-        {
-            ApplyTabLocation(tab, url, title);
-        }
+        ApplyTabLocation(view.Tab, url, title);
 
-        var recorded = await VisitHistoryService.Instance.RecordAsync(url, title, CurrentLink);
+        var recorded = await VisitHistoryService.Instance.RecordAsync(url, title, view.Tab.Link);
         if (recorded != null)
         {
             await LoadRecentAsync();
@@ -716,24 +886,24 @@ public partial class WebConsolePage : UserControl
     }
 
     /// <summary>
-    /// 页内路由变化（SPA）时把当前标签的地址 / 标题同步过来
+    /// 页内路由变化（SPA）时把**这个标签**的地址 / 标题同步过来。
+    /// 背景标签在后台跳转也只改自己的标签，不会污染地址栏（地址栏只跟活动标签走）。
     /// </summary>
-    private void SyncActiveTabLocation()
+    private void SyncTabLocation(TabWebView view)
     {
-        var core = TryGetCoreWebView2();
-
-        if (core == null || ActiveTab is not { } tab)
+        var core = view.Core;
+        if (core == null)
         {
             return;
         }
 
         try
         {
-            if (ApplyTabLocation(tab, core.Source, core.DocumentTitle))
+            if (ApplyTabLocation(view.Tab, core.Source, core.DocumentTitle)
+                && ReferenceEquals(view.Tab, ActiveTab))
             {
                 // 地址栏也跟着当前标签走，否则页内跳转后地址栏还停在入口地址
-                UrlTextBox.Text = tab.Url;
-                StatusTextBlock.Text = $"标签已更新为 {tab.DisplayTitle}（页内跳转）";
+                UrlTextBox.Text = view.Tab.Url;
             }
         }
         catch (Exception)
@@ -741,15 +911,6 @@ public partial class WebConsolePage : UserControl
             // 页面正在销毁时读取 Source 可能抛异常，静默跳过
         }
     }
-
-    private void OnSourceChanged(object? sender, CoreWebView2SourceChangedEventArgs e)
-        => SyncActiveTabLocation();
-
-    private void OnHistoryChanged(object? sender, object e)
-        => SyncActiveTabLocation();
-
-    private void OnDocumentTitleChanged(object? sender, object e)
-        => SyncActiveTabLocation();
 
     // ───────────────────────── 近期访问列表 ─────────────────────────
 
@@ -809,43 +970,16 @@ public partial class WebConsolePage : UserControl
         RecentEmptyHint.Visibility = entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    /// <summary>
+    /// 只创建**一次**所有标签共享的 WebView2 环境（同一个 userDataFolder → 登录态 / Cookie 跨标签通用）。
+    /// 各标签自己的 WebView2 在 <see cref="EnsureViewAsync"/> 里按需创建。
+    /// </summary>
     private async Task InitializeWebView2Async()
     {
         try
         {
-            var environment = await CoreWebView2Environment.CreateAsync(null, _userDataFolder);
-            await ConsoleWebView.EnsureCoreWebView2Async(environment);
-
-            var core = TryGetCoreWebView2();
-
-            if (core == null)
-            {
-                // 极罕见：Ensure 之后仍取不到（浏览器进程刚起来就退了）
-                StatusTextBlock.Text = "内置浏览器初始化后不可用，请点「打开」重试。";
-                return;
-            }
-
-            // 浏览器进程真正挂掉时（内存不足、目标页面自身崩溃、GPU 驱动异常都会导致）
-            // CoreWebView2 的 getter 会直接抛异常而不是返回 null，单靠 == null 判断拦不住。
-            // 订阅它，才能第一时间把状态说清楚，而不是等用户点哪里再莫名其妙报错。
-            core.ProcessFailed += OnBrowserProcessFailed;
-
-            // 捕获脚本要靠 WebMessage 把登录信息回传给宿主
-            core.Settings.IsWebMessageEnabled = true;
-
-            core.WebMessageReceived += OnWebMessageReceived;
-            core.NavigationCompleted += OnNavigationCompleted;
-
-            // SPA（宝塔这类）页内换路由不触发 NavigationCompleted，只触发这几个事件，
-            // 不订阅的话标签地址会停在入口地址，切走再切回来就回到首页
-            core.SourceChanged += OnSourceChanged;
-            core.HistoryChanged += OnHistoryChanged;
-            core.DocumentTitleChanged += OnDocumentTitleChanged;
-
-            // 每次新文档创建时注入，页面内部跳转同样生效
-            await core.AddScriptToExecuteOnDocumentCreatedAsync(CredentialCaptureScript);
-
-            _webViewInitialized = true;
+            _environment = await CoreWebView2Environment.CreateAsync(null, _userDataFolder);
+            _environmentReady = true;
         }
         catch (Exception ex)
         {
@@ -854,52 +988,45 @@ public partial class WebConsolePage : UserControl
     }
 
     /// <summary>
-    /// WebView2 浏览器进程崩溃。
-    /// <para>
-    /// 这在实际使用中是会发生的（内存紧张、访问到自身会崩的页面、GPU 驱动异常），
-    /// 崩溃之后 <c>CoreWebView2</c> 的 getter 会抛 InvalidOperationException
-    /// 而不是返回 null —— 如果不管，用户接下来点标签页、点「打开」都会直接报错，
-    /// 在加上全局兜底之前甚至是整个应用退出。所以这里记下状态并说明白。
-    /// </para>
+    /// **某个标签**的浏览器进程崩溃（内存不足、页面自身崩溃、GPU 异常都会导致）。
+    /// 只把这个标签标记为失败 —— 其它标签的 WebView2 是独立实例，照常可用，这正是
+    /// "宝塔白屏不再带崩其它网页"的关键。用户刷新 / 重开这个标签时会重建它的 WebView2。
     /// </summary>
-    private void OnBrowserProcessFailed(object? sender, CoreWebView2ProcessFailedEventArgs e)
+    private void OnBrowserProcessFailed(TabWebView view, CoreWebView2ProcessFailedEventArgs e)
     {
-        _browserProcessFailed = true;
+        view.ProcessFailed = true;
+        view.Core = null;
 
-        // 刻意不在这里把 _webViewInitialized 复位去"自动重连"：
-        // 重新初始化会给同一个 core 再订阅一遍事件（WebMessageReceived 等），
-        // 事件被触发两次反而更难查。宁可给一句诚实的提示。
-        StatusTextBlock.Text =
-            $"内置浏览器进程已结束（{e.ProcessFailedKind}），当前页面无法继续。请重启应用后再试。";
+        if (ReferenceEquals(view.Tab, ActiveTab))
+        {
+            StatusTextBlock.Text =
+                $"「{view.Tab.DisplayTitle}」的页面进程已结束（{e.ProcessFailedKind}）。其它标签不受影响；"
+                + "可点「刷新」或关掉该标签重新打开。";
+        }
     }
 
     /// <summary>
-    /// 安全地取 <c>CoreWebView2</c>：拿不到（含浏览器进程已崩溃）时返回 null。
+    /// 安全地取**当前活动标签**的 CoreWebView2：拿不到（含该标签进程已崩）时返回 null。
     /// <para>
-    /// ⚠️ 浏览器进程崩溃后，这个 getter **不会返回 null，而是直接抛异常**
-    /// （<c>InvalidOperationException: The WebView control is no longer valid because
-    /// the browser process crashed</c>）。代码里散落的 <c>CoreWebView2 == null</c>
-    /// 判断对这种情况完全无效，异常会从事件处理器一路逃出去。
-    /// 所以统一走这里取，崩了就当成"没有可用的 WebView2"，让调用方走既有的
-    /// "尚未就绪" 分支，最差只是提示一句，不会崩。
+    /// ⚠️ 浏览器进程崩溃后 getter 不会返回 null，而是直接抛异常。统一在这里兜住，
+    /// 崩了就当"没有可用的 WebView2"，让调用方走既有的"尚未就绪"分支。
     /// </para>
     /// </summary>
     private CoreWebView2? TryGetCoreWebView2()
     {
-        // 已知崩溃就别再反复去碰它 —— 每次访问都会现抛一个异常，白付开销
-        if (_browserProcessFailed)
+        var view = ActiveView;
+        if (view == null || view.ProcessFailed)
         {
             return null;
         }
 
         try
         {
-            return ConsoleWebView.CoreWebView2;
+            return view.View.CoreWebView2;
         }
         catch (Exception)
         {
-            // 浏览器进程已崩溃
-            _browserProcessFailed = true;
+            view.ProcessFailed = true;
             return null;
         }
     }
@@ -929,13 +1056,14 @@ public partial class WebConsolePage : UserControl
 
     private void ApplyZoom(double factor)
     {
-        if (TryGetCoreWebView2() == null)
+        var view = ActiveView;
+        if (view?.Core == null || view.ProcessFailed)
         {
             return;
         }
 
-        ConsoleWebView.ZoomFactor = Math.Clamp(factor, 0.25, 5.0);
-        StatusTextBlock.Text = $"缩放已设为 {ConsoleWebView.ZoomFactor * 100:F0}%";
+        view.View.ZoomFactor = Math.Clamp(factor, 0.25, 5.0);
+        StatusTextBlock.Text = $"缩放已设为 {view.View.ZoomFactor * 100:F0}%";
     }
 
     private async void FitWidthButton_Click(object sender, RoutedEventArgs e)
@@ -961,56 +1089,57 @@ public partial class WebConsolePage : UserControl
     /// </summary>
     private async Task FitWidthAsync()
     {
-        if (TryGetCoreWebView2() == null)
+        var view = ActiveView;
+        if (view?.Core == null || view.ProcessFailed)
         {
             StatusTextBlock.Text = "页面尚未就绪，请先打开地址。";
             return;
         }
 
-        var metrics = await GetViewportMetricsAsync();
+        var metrics = await GetViewportMetricsAsync(view);
         if (metrics is not { } m || m.Width <= 0 || m.ScrollWidth <= 0)
         {
             StatusTextBlock.Text = "读不到页面尺寸，无法自动适配，可手动选择缩放比例。";
             return;
         }
 
-        var current = ConsoleWebView.ZoomFactor;
+        var current = view.View.ZoomFactor;
         var target = Math.Clamp(current * m.Width / (double)m.ScrollWidth, 0.25, 2.0);
-        ConsoleWebView.ZoomFactor = target;
+        view.View.ZoomFactor = target;
 
         StatusTextBlock.Text = $"已按宽度自适应：{target * 100:F0}%（内容宽 {m.ScrollWidth}px / 视口 {m.Width}px）";
-        await ReportViewportAsync();
+        await ReportViewportAsync(view);
     }
 
     /// <summary>
     /// 把当前缩放与「页面视口 / 控件尺寸」写进提示栏，便于判断是否发生了缩放异常
     /// </summary>
-    private async Task ReportViewportAsync()
+    private async Task ReportViewportAsync(TabWebView view)
     {
-        if (TryGetCoreWebView2() == null)
+        if (view.Core == null || view.ProcessFailed)
         {
             return;
         }
 
-        var metrics = await GetViewportMetricsAsync();
+        var metrics = await GetViewportMetricsAsync(view);
         if (metrics is not { } m)
         {
             return;
         }
 
         StatusTextBlock.Text =
-            $"缩放 {ConsoleWebView.ZoomFactor * 100:F0}%"
+            $"缩放 {view.View.ZoomFactor * 100:F0}%"
             + $" · 页面视口 {m.Width}×{m.Height} px"
-            + $" · 控件 {ConsoleWebView.ActualWidth:F0}×{ConsoleWebView.ActualHeight:F0} DIP";
+            + $" · 控件 {view.View.ActualWidth:F0}×{view.View.ActualHeight:F0} DIP";
     }
 
     /// <summary>
     /// 读取页面视口（CSS px）与内容宽度
     /// </summary>
-    private async Task<(int Width, int Height, int ScrollWidth)?> GetViewportMetricsAsync()
+    private async Task<(int Width, int Height, int ScrollWidth)?> GetViewportMetricsAsync(TabWebView view)
     {
-        var core = TryGetCoreWebView2();
-        if (core == null)
+        var core = view.Core;
+        if (core == null || view.ProcessFailed)
         {
             return null;
         }
