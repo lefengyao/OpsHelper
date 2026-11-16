@@ -450,10 +450,10 @@ public partial class WebConsolePage : UserControl
         _captureEnabled = settings.CaptureCredentials;
         _fillAidEnabled = settings.FillHighlightAid;
 
-        // 下载服务：下载目录从设置读（每次取现读，改完设置立即生效），危险文件提示开关同步
+        // 下载服务：下载目录与危险提示都从设置现读（每次取现读，改完设置立即生效，不必重启）
         DownloadService.Instance.Configure(
             () => ConfigService.Instance.LoadSettings().DownloadDirectory,
-            settings.ConfirmDangerousDownload);
+            () => ConfigService.Instance.LoadSettings().ConfirmDangerousDownload);
 
         // 主窗口被拖动 / 改大小时，贴着 ☰ 弹出的下拉窗位置就不对了，直接关掉
         var host = Window.GetWindow(this);
@@ -865,33 +865,7 @@ public partial class WebConsolePage : UserControl
         var service = DownloadService.Instance;
         var dangerous = service.IsDangerous(suggested);
 
-        if (dangerous && service.ConfirmDanger)
-        {
-            // 系统原生 MessageBox：UI 线程模态，不会被 WebView2 原生子窗口盖住。
-            // 拿 deferral 让 WebView2 在我们等待用户确认期间不要超时。
-            var deferral = e.GetDeferral();
-            try
-            {
-                var answer = MessageBox.Show(
-                    $"即将下载「{suggested}」\n来自：{operation.Uri}\n\n这是可执行文件或脚本，可能存在风险。确定要下载吗？",
-                    "危险文件下载提示",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning,
-                    MessageBoxResult.No);
-
-                if (answer != MessageBoxResult.Yes)
-                {
-                    e.Cancel = true;
-                    StatusTextBlock.Text = $"已取消下载「{suggested}」";
-                    return;
-                }
-            }
-            finally
-            {
-                deferral.Complete();
-            }
-        }
-
+        // 目标路径先算好：无论要不要弹确认框，这一步都在下面统一的参数设置之前完成。
         string targetPath;
         try
         {
@@ -904,9 +878,52 @@ public partial class WebConsolePage : UserControl
             return;
         }
 
-        e.ResultFilePath = targetPath;
-        e.Handled = true; // 关掉 WebView2 自带的下载气泡，进度统一在我们自己的面板里看
+        // 危险文件 + 需要确认：绝不能在 WebView2 事件处理器里同步弹模态框 ——
+        // 那会创建嵌套消息循环、引发 WebView2 不支持的重入（官方线程模型明确禁止，实测会卡死）。
+        // 正确做法：拿 deferral 让 WebView2 等待，把弹窗 Post 到 handler 返回之后执行，
+        // 在回调里设好全部参数，最后才 Complete()。
+        if (dangerous && service.ConfirmDanger)
+        {
+            var deferral = e.GetDeferral();
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    var answer = MessageBox.Show(
+                        $"即将下载「{suggested}」\n来自：{operation.Uri}\n\n这是可执行文件或脚本，可能存在风险。确定要下载吗？",
+                        "危险文件下载提示",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning,
+                        MessageBoxResult.No);
 
+                    if (answer != MessageBoxResult.Yes)
+                    {
+                        e.Cancel = true;
+                        StatusTextBlock.Text = $"已取消下载「{suggested}」";
+                        return;
+                    }
+
+                    e.ResultFilePath = targetPath;
+                    e.Handled = true; // 关掉 WebView2 自带气泡，进度统一在我们自己的面板里看
+                    service.Register(operation, targetPath, dangerous);
+                    StatusTextBlock.Text = $"开始下载「{Path.GetFileName(targetPath)}」→ {Path.GetDirectoryName(targetPath)}";
+                }
+                catch (Exception ex)
+                {
+                    e.Cancel = true;
+                    StatusTextBlock.Text = $"下载处理失败：{ex.Message}";
+                }
+                finally
+                {
+                    deferral.Complete(); // 永远最后，且取消/异常分支也走这里
+                }
+            }));
+            return;
+        }
+
+        // 非危险文件：没有弹窗，直接同步设置参数即可（此时无需 deferral）
+        e.ResultFilePath = targetPath;
+        e.Handled = true;
         service.Register(operation, targetPath, dangerous);
         StatusTextBlock.Text = $"开始下载「{Path.GetFileName(targetPath)}」→ {Path.GetDirectoryName(targetPath)}";
     }

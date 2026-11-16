@@ -41,6 +41,8 @@ public sealed class BrowserExtensionItem
 /// </summary>
 public partial class BrowserExtensionsWindow : Window
 {
+    private static BrowserExtensionsWindow? _instance;
+
     private readonly WebConsolePage _page;
     private List<BrowserExtensionItem> _items = new();
 
@@ -49,13 +51,27 @@ public partial class BrowserExtensionsWindow : Window
         InitializeComponent();
         _page = page;
         Owner = Application.Current?.MainWindow;
+        Closed += (s, _) =>
+        {
+            if (ReferenceEquals(s, _instance))
+            {
+                _instance = null;
+            }
+        };
     }
 
-    /// <summary>从工具菜单打开；异步拉起窗口并加载扩展列表。</summary>
+    /// <summary>从工具菜单打开；复用已有实例，异步拉起窗口并刷新扩展列表。</summary>
     internal static async Task ShowForAsync(WebConsolePage page)
     {
-        var window = new BrowserExtensionsWindow(page);
+        var window = _instance;
+        if (window == null || !window.IsLoaded)
+        {
+            window = new BrowserExtensionsWindow(page);
+            _instance = window;
+        }
+
         window.Show();
+        window.Activate();
         await window.LoadAsync();
     }
 

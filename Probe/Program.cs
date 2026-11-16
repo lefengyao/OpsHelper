@@ -1044,7 +1044,7 @@ internal static class Program
 
         // 文件名防目录逃逸：..\ 之类不能跑出下载目录（注入临时目录，别碰真实下载目录）
         var tempDownloadDir = Path.Combine(Path.GetTempPath(), "sopshelper_probe_download");
-        DownloadService.Instance.Configure(() => tempDownloadDir, true);
+        DownloadService.Instance.Configure(() => tempDownloadDir, () => true);
         var builtPath = DownloadService.Instance.BuildTargetPath("..\\evil.txt");
         Check("下载文件名做了路径清洗（无法逃出下载目录）",
             () => Path.GetDirectoryName(builtPath) == Path.GetFullPath(tempDownloadDir)

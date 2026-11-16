@@ -33,20 +33,21 @@ public sealed class DownloadService
     /// <summary>需要从下载目录读配置的委托（由系统设置注入，避免服务直接依赖 ConfigService 时序）。</summary>
     private Func<string?>? _directoryProvider;
 
-    private bool _confirmDanger = true;
+    /// <summary>危险文件是否提示的委托（每次现读，改完设置立即生效，不必重启）。</summary>
+    private Func<bool> _confirmDangerProvider = () => true;
 
     private DownloadService()
     {
     }
 
-    /// <summary>下载可执行文件时是否提示（设置里可关）。</summary>
-    public bool ConfirmDanger => _confirmDanger;
+    /// <summary>下载可执行文件时是否提示（设置里可关，每次现读）。</summary>
+    public bool ConfirmDanger => _confirmDangerProvider();
 
     /// <summary>由启动流程注入：读取用户配置的下载目录 + 危险文件是否提示。</summary>
-    public void Configure(Func<string?> directoryProvider, bool confirmDanger)
+    public void Configure(Func<string?> directoryProvider, Func<bool> confirmDangerProvider)
     {
         _directoryProvider = directoryProvider;
-        _confirmDanger = confirmDanger;
+        _confirmDangerProvider = confirmDangerProvider;
     }
 
     /// <summary>当前生效的下载目录（配置为空时回退默认值）。</summary>

@@ -20,10 +20,14 @@ public partial class DownloadManagerWindow : Window
         InitializeComponent();
         Owner = Application.Current?.MainWindow;
         _service.Changed += OnDownloadsChanged;
-        Closed += (_, _) =>
+        Closed += (s, _) =>
         {
             _service.Changed -= OnDownloadsChanged;
-            _instance = null;
+            // 只清掉"当前实例"，避免关闭间隙里新建的窗口被旧窗口的 Closed 误置 null
+            if (ReferenceEquals(s, _instance))
+            {
+                _instance = null;
+            }
         };
         Refresh();
     }
