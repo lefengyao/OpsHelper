@@ -2,6 +2,13 @@
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
 
   <!--
+    ⚠️ 已停用（2026-10-17 起）：本项目改用 Inno Setup 出安装包，
+    见同目录 ServerOpsHelper.iss 与 build_inno.py。release_all.py 不再调用本文件。
+    这里的 Version 冻结在 1.9.2，**不要拿它出包**，否则会打出一个版本倒退的安装程序。
+    保留本文件只为回看当年 MSI / Burn 的坑（注释里写了不少）。
+  -->
+
+  <!--
     服务器运维助手 · 安装包定义（WiX v4+ 语法）
 
     ⚠️ 安装/卸载都**不会碰用户数据**：程序装到 %LOCALAPPDATA%\Programs\ServerOpsHelper，

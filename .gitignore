@@ -27,6 +27,8 @@ WebView2Data/
 .tools/*.log
 .tools/api.json
 .tools/InnoSetup6/
+# 验证 SSH 连接池用的隔离 Python 环境（几万个文件，不进库；fake_sshd.py 本身要保留）
+.tools/sshprobe-venv/
 
 # ===== 探针产物：安装包 / 日志 / 截图 / 临时测试目录 =====
 Probe/burn_extract/

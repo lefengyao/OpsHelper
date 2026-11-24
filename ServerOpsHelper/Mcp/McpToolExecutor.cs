@@ -53,9 +53,14 @@ internal sealed class McpToolException : Exception
 /// <summary>
 /// 工具的真正实现：把 MCP 调用翻译成对已保存服务器的 SSH / SFTP 操作。
 /// <para>
-/// 线程约定：全部方法可在任意线程调用，内部自己 <see cref="Task.Run(Func{Task})"/>，
-/// 结果不碰 UI。每次调用独立建连、用完即断 —— 桌面端可能同时开着终端和监控，
-/// 连接池化换来的性能抵不过"连接状态互相污染"带来的排查成本。
+/// 线程约定：全部方法可在任意线程调用，内部自己 <c>Task.Run</c>，结果不碰 UI。
+/// </para>
+/// <para>
+/// 连接策略（v1.13 起）：命令执行走 <see cref="SshSessionPool"/> 复用同一条已认证连接。
+/// 曾经是"每条命令新建一次连接、用完即断"，理由是"连接池化换来的性能抵不过连接状态互相污染"——
+/// 这个判断在生产环境被证伪了：智能体连续排查时几秒内发起几十次握手，直接撞上 sshd 的
+/// MaxStartups，表现为 <c>does not contain an SSH identification string</c>。
+/// 现在只用一条连接（同机串行），状态污染的风险反而比"几十条连接各说各话"更小。
 /// </para>
 /// </summary>
 internal sealed class McpToolExecutor
@@ -1114,11 +1119,14 @@ internal sealed class McpToolExecutor
     /// <summary>
     /// 在 Linux 服务器上跑一条命令，带**两层**超时：
     /// <list type="bullet">
-    ///   <item>SSH.NET 的 <c>CommandTimeout</c>（正常情况下由它抛超时）；</item>
-    ///   <item>外层 <see cref="Task.WhenAny"/> 硬兜底 —— 同步 <c>Execute()</c> 在某些版本的
-    ///         SSH.NET 上不会老老实实响应 CommandTimeout，没有这层就会永久挂住，
-    ///         而 MCP 客户端那边只会看到"一直没返回"。</item>
+    ///   <item>命令自身的取消（<c>CancelAfter</c> + <c>ExecuteAsync</c>），会向远端发信号终止命令；</item>
+    ///   <item>外层 <see cref="Task.WhenAny"/> 硬兜底 —— 取消信号偶有"发了但不返回"的情况，
+    ///         没有这层，MCP 客户端只会看到"一直没返回"。</item>
     /// </list>
+    /// <para>
+    /// 连接来自 <see cref="SshSessionPool"/>：同一条已认证连接复用，不再每条命令握手一次。
+    /// 这是"短时间连续调用 -> 撞 sshd MaxStartups -> 版本协商阶段被拒"的根治手段。
+    /// </para>
     /// </summary>
     private static async Task<RemoteRun> RunSshCommandAsync(
         ServerInfo server,
@@ -1131,93 +1139,176 @@ internal sealed class McpToolExecutor
             throw new McpToolException($"服务器「{server.Name}」标记为 Windows，命令执行目前只支持 Linux（SSH）。");
         }
 
-        var work = Task.Run(() => RunBlocking(server, command, timeoutSeconds), cancellationToken);
+        // 握手超时与命令超时脱钩：拿 5 秒去等一次跨公网握手太苛刻，
+        // sshd 稍有负载就会误判成"连不上"，然后被当成抖动去重试，越试越乱。
+        var connectTimeout = TimeSpan.FromSeconds(Math.Clamp(timeoutSeconds, 10, 20));
+
+        var work = SshSessionPool.Shared.RunAsync(
+            server,
+            (client, token) => ExecuteOnceAsync(client, command, timeoutSeconds, token),
+            connectTimeout,
+            cancellationToken);
 
         // 兜底计时器**不挂 cancellationToken**：一旦取消，Delay 会变成 canceled task，
         // 被下面判成"超时"，把"请求被取消"误报成"命令超时"，误导排查方向。
         var guard = Task.Delay(TimeSpan.FromSeconds(timeoutSeconds + 10));
-        var finished = await Task.WhenAny(work, guard);
+        var finished = await Task.WhenAny(work, guard).ConfigureAwait(false);
 
         if (finished != work)
         {
-            // 后台那条连接已不受控，只能放弃等待；SSH.NET 自身最终也会因 CommandTimeout 退出
-            throw new McpToolException($"命令在 {timeoutSeconds} 秒内没有结束，已放弃等待（连接会被回收）。");
+            // 关键：**真的把连接断掉**，而不是丢下不管。
+            // 旧实现只 throw，阻塞中的同步 Execute() 继续活着，那条会话就永久占着服务端的槽位；
+            // 攒几条之后，新建连接会越来越容易被 sshd 拒掉 —— 这正是"日志命令卡死一次，后面全线握手失败"的由来。
+            SshSessionPool.Shared.Discard(server);
+
+            _ = work.ContinueWith(
+                t => _ = t.Exception,
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+
+            throw new McpToolException(
+                $"命令在 {timeoutSeconds} 秒内没有结束，已放弃等待，并强制断开了这条 SSH 连接" +
+                "（避免僵尸会话占住服务端槽位）。若是日志类命令，请用 --tail / --since 限制输出量。");
         }
 
-        return await work;
-    }
-
-    private static RemoteRun RunBlocking(ServerInfo server, string command, int timeoutSeconds)
-    {
+        RemoteRun run;
         try
         {
-            using var client = new SshClient(server.Host, server.Port, server.Username, server.Password);
-            client.ConnectionInfo.Timeout = TimeSpan.FromSeconds(Math.Min(15, Math.Max(5, timeoutSeconds)));
-            client.Connect();
-
-            ServerConnectionTracker.MarkConnected(server);
-
-            using var cmd = client.CreateCommand(command);
-            cmd.CommandTimeout = TimeSpan.FromSeconds(timeoutSeconds);
-
-            try
-            {
-                cmd.Execute();
-            }
-            catch (Renci.SshNet.Common.SshOperationTimeoutException)
-            {
-                return new RemoteRun(-1, string.Empty, $"命令超过 {timeoutSeconds} 秒未结束，已中断。", TimedOut: true);
-            }
-
-            return new RemoteRun(
-                cmd.ExitStatus ?? -1,
-                cmd.Result ?? string.Empty,
-                cmd.Error ?? string.Empty,
-                TimedOut: false);
+            run = await work.ConfigureAwait(false);
+        }
+        catch (McpToolException)
+        {
+            throw;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // 取消时 channel 的状态不可知（可能停在半路），不要留着给下一条命令踩
+            SshSessionPool.Shared.Discard(server);
+            throw new McpToolException("请求已被取消；命令可能仍在服务器上运行（已在取消时向远端发送终止信号）。");
+        }
+        catch (Renci.SshNet.Common.SshConnectionException ex)
+        {
+            // 握手失败的说明在 pool 里已经写全（含重试次数与排查方向），不要再套一层前缀
+            throw new McpToolException(ex.Message);
         }
         catch (Exception ex)
         {
             throw new McpToolException($"连接或执行失败：{ex.Message}");
         }
+
+        // 超时的连接不再复用：channel 可能没干净关闭，接着用会让下一条命令莫名失败
+        if (run.TimedOut)
+        {
+            SshSessionPool.Shared.Discard(server);
+        }
+
+        return run;
+    }
+
+    /// <summary>
+    /// 在一条**已连接**的会话上执行一次命令。
+    /// <c>ExecuteAsync</c> 取消时会向远端发终止信号（SSH.NET 2025 的行为），
+    /// 比同步 <c>Execute()</c> 只丢下线程不管要干净得多。
+    /// </summary>
+    private static async Task<RemoteRun> ExecuteOnceAsync(
+        SshClient client,
+        string command,
+        int timeoutSeconds,
+        CancellationToken cancellationToken)
+    {
+        using var cmd = client.CreateCommand(command);
+        cmd.CommandTimeout = TimeSpan.FromSeconds(timeoutSeconds);
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+
+        try
+        {
+            await cmd.ExecuteAsync(cts.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return new RemoteRun(-1, string.Empty, $"命令超过 {timeoutSeconds} 秒未结束，已中断。", TimedOut: true);
+        }
+        catch (Renci.SshNet.Common.SshOperationTimeoutException)
+        {
+            return new RemoteRun(-1, string.Empty, $"命令超过 {timeoutSeconds} 秒未结束，已中断。", TimedOut: true);
+        }
+
+        return new RemoteRun(
+            cmd.ExitStatus ?? -1,
+            cmd.Result ?? string.Empty,
+            cmd.Error ?? string.Empty,
+            TimedOut: false);
     }
 
     // ───────────────────────── SFTP ─────────────────────────
 
-    /// <summary>建一条独立 SFTP 连接，执行一次操作后断开。</summary>
+    /// <summary>
+    /// 建一条独立 SFTP 连接，执行一次操作后断开。
+    /// <para>
+    /// 不做连接复用：SFTP 的读写是"一次性、大块"的，复用省下的握手次数本来就不多，
+    /// 而长期挂着的第二条通道反而会在服务端占一个会话槽。这里只补**握手重试** ——
+    /// 和 exec 通道撞的是同一类 MaxStartups 抖动，SFTP 也会被同样概率地拒掉。
+    /// </para>
+    /// </summary>
     private static async Task<T> WithSftpAsync<T>(
         ServerInfo server,
         Func<SftpClient, T> action,
         CancellationToken cancellationToken = default)
     {
-        return await Task.Run(() =>
+        const int maxAttempts = 4;
+
+        return await Task.Run(async () =>
         {
-            try
+            for (var attempt = 1; attempt <= maxAttempts; attempt++)
             {
-                using var client = new SftpClient(server.Host, server.Port, server.Username, server.Password);
-                client.ConnectionInfo.Timeout = TimeSpan.FromSeconds(10);
-                client.OperationTimeout = TimeSpan.FromSeconds(60);
-                client.Connect();
-
-                ServerConnectionTracker.MarkConnected(server);
-
-                var result = action(client);
-
-                if (client.IsConnected)
+                try
                 {
-                    client.Disconnect();
-                }
+                    using var client = new SftpClient(server.Host, server.Port, server.Username, server.Password);
+                    client.ConnectionInfo.Timeout = TimeSpan.FromSeconds(15);
+                    client.OperationTimeout = TimeSpan.FromSeconds(60);
 
-                return result;
+                    await client.ConnectAsync(cancellationToken).ConfigureAwait(false);
+
+                    ServerConnectionTracker.MarkConnected(server);
+
+                    var result = action(client);
+
+                    if (client.IsConnected)
+                    {
+                        client.Disconnect();
+                    }
+
+                    return result;
+                }
+                catch (McpToolException)
+                {
+                    throw;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex) when (attempt < maxAttempts && SshDiagnostics.IsTransientHandshake(ex))
+                {
+                    // 握手阶段就失败 = 一个字节的文件数据都没传，重试是安全的；
+                    // 已经连上之后的错误一律不重试，避免半截上传变成"看起来成功"。
+                    await Task.Delay(SshDiagnostics.RetryDelay(attempt), cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    throw new McpToolException(
+                        attempt > 1
+                            ? SshDiagnostics.DescribeHandshakeFailure(server, ex, attempt)
+                            : $"SFTP 操作失败：{ex.Message}");
+                }
             }
-            catch (McpToolException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                throw new McpToolException($"SFTP 操作失败：{ex.Message}");
-            }
-        }, cancellationToken);
+
+            // 循环内必然 return 或 throw，这里只是给编译器一个明确的终点
+            throw new McpToolException($"SFTP 操作失败：连接 {server.Name} 连续 {maxAttempts} 次握手不成功。");
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     // ───────────────────────── 用户扩展 ─────────────────────────

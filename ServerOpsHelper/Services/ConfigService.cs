@@ -218,9 +218,23 @@ public class ConfigService
     public async Task SaveServerAsync(ServerInfo server)
     {
         var servers = await LoadServersAsync();
+
+        // 先留住旧记录再覆盖：池的 key 是「主机:端口:账号」，一旦这三项被改，
+        // 拿新对象去 Discard 会算出一个新的 key —— 旧连接既摘不掉也匹配不上指纹，
+        // 就会一直连着那台"已经从配置里消失"的机器，直到进程退出。
+        var previous = servers.FirstOrDefault(s => s.Id == server.Id);
+
         servers.RemoveAll(s => s.Id == server.Id);
         servers.Add(server);
         await SaveServersAsync(servers);
+
+        // 改了地址/端口/账号/密码后，池里那条旧连接要么连错机器、要么还在用旧凭据。
+        // 新旧两个 key 都摘一次：正常情况下第二个是空操作。
+        SshSessionPool.Shared.Discard(server);
+        if (previous != null)
+        {
+            SshSessionPool.Shared.Discard(previous);
+        }
     }
 
     /// <summary>
@@ -229,8 +243,17 @@ public class ConfigService
     public async Task DeleteServerAsync(Guid id)
     {
         var servers = await LoadServersAsync();
+
+        // 删之前先留住对象：删完就不知道 Host/Port 了，池里那条连接会一直挂着。
+        // 配置里没有、连接还在，等于"删了但还在连"——必须一起清掉。
+        var removed = servers.Where(s => s.Id == id).ToList();
         servers.RemoveAll(s => s.Id == id);
         await SaveServersAsync(servers);
+
+        foreach (var server in removed)
+        {
+            SshSessionPool.Shared.Discard(server);
+        }
     }
 
     /// <summary>

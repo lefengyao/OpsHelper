@@ -149,6 +149,9 @@ internal static class McpToolCatalog
             Run a shell command on one Linux server over SSH and return exit code, stdout and
             stderr. Non-zero exit codes are reported as data (isError=false) so you can inspect
             the failure; only transport/auth problems set isError=true.
+            Always bound log output — use `--tail`/`--since` (e.g. `docker compose logs --since 10m`,
+            `journalctl -u x --since -10m`) instead of dumping a whole log; an unbounded dump can
+            stall the SSH channel and slow down every later call.
             Requires the user to have enabled "allow变更操作" in Settings.
             """,
             RequiresWriteAccess: true,

@@ -337,8 +337,10 @@ cd ServerOpsHelper/Installer
 python release_all.py
 ```
 
-按顺序做完：重新发布 → 打 MSI → 打便携包 zip → 刷新已解压的便携版文件夹 → 清理中间产物。
-版本号统一从 `Package.wxs` 读取，不会出现脚本与实际打包版本漂移。
+按顺序做完：重新发布 → 打单文件安装程序（Inno）→ **装/卸回归**（临时目录，失败即阻断）
+→ 打便携包 zip → 刷新已解压的便携版文件夹 → 清理中间产物。
+版本号唯一来源是 `ServerOpsHelper.csproj` 的 `<Version>`，安装包与便携包都从这里取，
+不会出现「脚本里写的版本」和「实际编出来的版本」不一致。
 
 #### 产物落点：按版本号分目录
 
@@ -352,9 +354,9 @@ release/
     ServerOpsHelper-便携版-v1.5.3/        同上解压版（可直接双击运行）
 ```
 
-> **MSI 不再单独交付**（2026-09-30 老板定的）：Burn 的单文件 EXE 内部本来就包着
-> 同一个 MSI，单独发 MSI 是冗余。出包流程里 MSI 仍会先打出来（ICE 校验照跑，守住质量门槛），
-> EXE 打完后脚本会把它从交付目录移除。`build_installer.py` 仍可单独运行手动出 MSI。
+> **没有中间 MSI、也没有 ICE 校验**（2026-10-17 换成 Inno 之后）：安装包本身就是一个 exe，
+> 出包只有「publish → 编译 → 装/卸回归」三步。WiX/MSI 那套脚本与 `.wxs` 仍留在 `Installer/`，
+> 但**不再参与交付**，别照着它们改（见下方「安装包」一节）。
 > 早先所有产物是平铺在一个「发布」目录里的，于是**出新版必须先删旧版** ——
 > 否则同名文件混在一起分不清是哪一版，历史交付物也留不下来。
 > 改成按版本号分目录后，出新版不再动旧版，要回溯哪一版都能找到。
@@ -366,11 +368,15 @@ release/
 - 若发现工作区根目录还留着旧布局的 `ServerOpsHelper-便携版-v*` 文件夹，
   会先**迁入** `release/v<版本>/`，再清掉根目录那一份（避免两处占空间、还容易改错地方）。
 
-> ⚠️ 发新版本**必须同时升 `Version`**（`csproj`、`Package.wxs`、`使用说明.txt` 三处）——
-> MSI 靠版本号判断升级，同版本号重发是装不上去的。
+> ⚠️ 发新版本**必须同时升 `Version`**（两处）：`ServerOpsHelper.csproj` 的 `<Version>`
+> （安装包名、安装记录里的版本、便携包目录名全从这里取）与 `使用说明.txt` 首行。
+> `Installer/ServerOpsHelper.iss` 里的 `1.9.3` 只是 `#ifndef` 兜底值，正常打包用不到，**不用改**；
+> WiX 时代的 `Package.wxs` / `Bundle.wxs` 已不参与出包，也不要去改它们。
+> Inno 按 `AppId` 认产品、按 `AppVersion` 记版本，同版本重装是覆盖安装，不会出问题。
 
-依赖两个工具（不在本仓库内，路径可用环境变量覆盖）：
-`DOTBUILD_PY`（dotnet 包装器，沙箱里靠它注入 Windows 环境变量）与 `WIX_EXE`（WiX 5）。
+依赖两个工具（都不在仓库里，路径可用环境变量覆盖）：
+`DOTBUILD_PY`（dotnet 包装器，沙箱里靠它注入 Windows 环境变量）与
+`ISCC_EXE`（Inno Setup 6 编译器，默认取 `.tools/InnoSetup6/ISCC.exe`，该目录已 gitignore）。
 
 ### 便携版（免安装）
 
@@ -384,124 +390,92 @@ dotnet publish -c Release -r win-x64 --self-contained true \
 `csproj` 里的 `<SatelliteResourceLanguages>zh-Hans;en</SatelliteResourceLanguages>` 会把 70 多个语言的
 附属资源裁掉，只保留中文与英文。`使用说明.txt` 已声明为工程项，会跟着 build / publish 一起出去。
 
-### 安装包（MSI，仅作为 EXE 的内部中间产物）
+### 安装包（单文件 EXE，Inno Setup 6）
 
-用 [WiX Toolset](https://wixtoolset.org/) **v5**（v6 起需要接受付费的 OSMF 协议，v5 是最后一个免费版本）：
-
-```bash
-python dotbuild.py "C:\...\ServerOpsHelper" tool install wix --version 5.0.2 --tool-path <工具目录>
-
-cd ServerOpsHelper/Installer
-set WIX_EXE=<工具目录>\wix.exe
-python build_installer.py      # 先按 publish 产物生成 Files.wxs，再调用 wix 打出 MSI
-```
-
-- 产物：`<工作区>/release/v<版本>/ServerOpsHelper-Setup-v<版本>.msi`（约 48 MB，比 zip 更小）。
-- **安装向导可以自选安装位置，且选的是父目录**（欢迎 → 选择安装位置 → 确认 → 安装 → 完成）：
-  2026-09-30 起向导绑定的目录是「父目录」—— 用户填 `E:\AI`，程序会装进
-  **`E:\AI\ServerOpsHelper\`**（自动新建的应用子文件夹），不会把几十个文件散在用户选的目录里。
-  不改的话默认装到 `%LOCALAPPDATA%\Programs\ServerOpsHelper`。
-  向导页来自 WiX UI 扩展，构建前需装一次：
-  `wix extension add -g WixToolset.UI.wixext/5.0.2`（`build_installer.py` 已带 `-ext` 参数）。
-- **按当前用户安装**（`Scope="perUser"`），装到 `%LOCALAPPDATA%\Programs\ServerOpsHelper`，**不需要管理员**；
-  同时创建开始菜单与桌面快捷方式，可在「设置 → 应用」里正常卸载。
-- **升级时会自动带出上次的安装位置**（实测）：用安装版装过一次之后，
-  下次再运行安装程序（包括覆盖升级）时，安装位置就是上次那个，不会被重置回默认。
-  机制是 Burn 的持久化变量（`InstallFolder` 的 `Persisted="yes"`）。
-  ⚠️ 但**手工解压的便携版不在记忆范围内** —— 安装包看不见它，
-  所以首次用安装版装、而机器上已有一份手工便携版时，向导显示的是默认位置，
-  需要自己把位置指到那份便携版所在的父目录。
-- **支持直接覆盖安装（升级），不用先卸载旧版**：MSI 的 `MajorUpgrade` 会按版本号
-  移除旧版本，Burn 也会替换旧的 ARP 条目。实测见 `Probe/verify_upgrade.py`
-  （9 项断言）：装旧版 → **直接**装新版 → 无旧版残留、程序文件完整、
-  「设置 → 应用」里**只显示一条**（MSI 的 ARP 条目由 Burn 隐藏，用户只看到引导程序那条）。
-  ⚠️ 前提是**版本号必须升**：同版本重装属于"修复安装"，不会触发升级逻辑。
-- **ProductCode 按版本号确定性生成**（`build_installer.py` 的 `make_product_code`）。
-  ⚠️ 不能用 WiX 默认的 `ProductCode="*"`：那样**同一个版本重新出包会得到不同的
-  ProductCode**，MSI 就把两批同版本的包当成**两个不同产品** —— 装两次会在
-  注册表里留下两条记录，卸载其中一条后另一条变成"幽灵"（点卸载报 1605）。
-  2026-10-01 实测踩到并修复。
-- **升级与卸载都不会碰用户数据**：数据一直在 `%LOCALAPPDATA%\ServerOpsHelper`，安装包里刻意不引用它。
-  也就是说**数据不跟着安装位置走** —— 要把数据也换个盘，用环境变量
-  `SERVEROPSHELPER_CONFIG_DIR` 指定目录（便携部署与测试隔离也靠它）。
-- `Installer/Package.wxs` 是手写的（包信息、目录、快捷方式、功能项）；
-  `Installer/Files.wxs` 由脚本按 publish 产物生成，**不要手工编辑**。
-  两个坑已经在脚本里处理掉：WiX 的 Id 只允许 ASCII（`使用说明.txt` 这类中文文件名要转义成下划线），
-  以及 `Guid="*"` 会按文件路径推导组件 GUID，同名文件（`WebView2Loader.dll` 在根目录与 `runtimes\` 各一份）
-  会撞成同一个 GUID 而报错，所以改成按相对路径 uuid5 生成确定性 GUID。
-- 验证安装包（不注册到系统，只解包）：
-  `msiexec /a "<工作区>\release\v<版本>\ServerOpsHelper-Setup-v<版本>.msi" /qn TARGETDIR=<临时目录>`
-- **`-ext` 必须显式带扩展版本号**（`WixToolset.UI.wixext/5.0.2`，见脚本里的 `WIX_EXT_VERSION`）。
-  不写版本号时 wix 会去全局扩展目录自己挑：一旦那里混进了别的版本
-  （2026-09-29 就被装进了 WiX 6 的 `6.0.2`，包结构是 `wixext6`，wix 5 认不出来、
-  在 `extension list` 里显示成 `6.0.2 (damaged)`），wix 会**只挑最新的那个去试**，
-  失败就报 `error WIX0144: The extension could not be found`，
-  **连已经装好的 5.0.2 都不再看一眼**。显式锁定版本后，构建就不再受全局环境摆布。
-- **ICE 合规校验是交付门槛**：`build_installer.py` 打完 MSI 会自动跑
-  `wix msi validate`，只要出现**未豁免的 ERROR** 就返回非零、阻断出包。
-  目前 ERROR 为 0（曾经有 271 条）。唯一的豁免项是 `ICE64` 里针对 `ProgramsFolder`
-  的告警（那是所有 perUser 程序共用的系统目录，删它会波及其他程序），
-  理由写在 `build_installer.py` 的 `ICE_ERROR_WHITELIST` 注释里。剩 264 条是
-  ICE91 之类的**警告**，不影响安装。
-
-### 安装包（单文件 EXE，Burn 引导程序）
-
-对外分发用这个，双击即装，界面对用户最友好：
+2026-10-17 起用 [Inno Setup 6](https://jrsoftware.org/isinfo.php) 出安装包，**不再有 MSI**。
+原因写在 `Installer/ServerOpsHelper.iss` 头部：MSI 的回滚备份目录 `<盘>:\Config.Msi` 的 ACL 只有
+SYSTEM + 管理员，非提权的 perUser 安装在收尾时必然「错误 5 / 1926」（实测装 C:/D: 都正常、装 E:\AI 必挂），
+而 Inno 编出来就是一个普通 exe —— 解文件、写注册表、生成 `uninstall.exe`，完全不碰 Windows Installer，
+`Config.Msi / 1603 / 1926` 这一整类故障从根上消失。
 
 ```bash
 cd ServerOpsHelper/Installer
-python build_bundle.py         # 需要先有 MSI（release_all.py 会按顺序自动做）
+python build_inno.py      # 需要先有 publish/win-x64（release_all.py 会先做）
 ```
 
-- 产物：`<工作区>/release/v<版本>/ServerOpsHelper-Setup-v<版本>.exe`（约 49 MB，内部包着 MSI）。
-- **界面全简体中文**，翻译在 `Installer/zh-CN.wxl`，通过 `LocalizationFile` 挂到
-  `WixStandardBootstrapperApplication` 上。几点值得记下来：
-  - WixStdBA **自带主题只有英文资源**。WiX 源码 `stdbas/Resources` 下确实有 `2052`
-    目录，但只有 `wixpreq.wxl`（.NET 依赖提示语），**没有主界面资源** ——
-    所以中文界面不能靠 `-culture zh-CN` 自动获得，必须自带一份完整字符串表。
-  - `.wxl` 里的 **String Id 必须与主题 XML 里的 `#(loc.XXX)` 一字不差**，
-    漏一条那一处就会显示成空白或回退英文。
-  - 想确认中文真的进包了，可以解出引导程序应用目录看 `thm.wxl`：
-    `wix burn extract <exe> -o <内容目录> -outba <BA 目录>`，
-    `thm.wxl` 就是编译进去的字符串表，`thm.xml` 是主题布局。
-- **主题必须用 `hyperlinkLargeLicense`（大主题）**：小主题 `hyperlinkLicense`
-  **根本不含 Options 页的布局**，点「选项」只会让窗口变大、里面一片空白，
-  既没有"安装位置"输入框也没有"浏览"按钮 —— 用户观感就是"这安装程序不能选目录"。
-- 欢迎页中间那段说明文字由 `InstallMessage` / `InstallMessageOptions` 两条控制，
-  WixStdBA 按"是否显示 Options 按钮"二选一。大主题有 Options 按钮，
-  所以实际用的是 `InstallMessageOptions`，中文文案里带了
-  「如需更改安装位置，请先点击「选项」」的操作指引。
-  （原先 `LicenseUrl=""` 会隐藏许可链接，欢迎页中间就空着，看着像坏了。）
-- **`InstallFolder` 变量不能用 `Type="string"`**。这里踩过三轮坑，结论记在 `Bundle.wxs` 注释里：
-  `string` 类型**不做变量展开**，`[LocalAppDataFolder]Programs\ServerOpsHelper`
-  会被当字面量传给 MSI → MSI 报「错误 1606 无法访问网络位置」→ 1603 装不上；
-  去掉 `Type` 后安装好了，但**卸载时 Burn 从注册表读回变量又不再展开**，同样 1603。
-  最终做法：变量默认留空 + `Persisted="yes"`，用
-  `SetVariable Condition="NOT InstallFolder"` 在运行时填实路径。
-  另外 Burn 条件运算符里**没有"包含/前缀"**（`=` `!=` `~=` 都是整体字符串比较，
-  `~=` 仅是不区分大小写），别写 `InstallFolder ~= "["` 这种判定。
-- **`LaunchTarget` 结尾必须有反斜杠**：写成 `[InstallFolder]ServerOpsHelper.exe`
-  会拼出 `…\ServerOpsHelperServerOpsHelper.exe`，装完点启动必然打不开。
-- `Installer/Bundle.wxs` 手写；`build_bundle.py` 只做变量替换与调用 `wix build`。
-  注意 `LocalizationFile` 是相对 `.wxs` 的路径，所以脚本把 `cwd` 设成 `Installer/`。
+- 产物：`release/v<版本>/ServerOpsHelper-Setup-v<版本>.exe`（约 47 MB，lzma2/max 压缩整个 publish 目录）。
+- 版本号由 `build_inno.py` 从 `csproj` 读出来，用 `/DMyAppVersion=` 传给 `.iss`，
+  避免「脚本里硬编码的版本」和「实际编出来的 exe」漂移。
+- 向导**全简体中文**（`compiler:Languages\ChineseSimplified.isl`），流程：
+  欢迎 → 安装范围 → **安装位置** → 附加任务 → 准备安装 → 安装中 → 完成。
+  安装位置直接显示在页面上，不再是藏在「选项」背后的输入框。
+
+#### 改安装脚本前必须知道的（每条都是踩出来的）
+
+| 约束 | 原因 |
+|------|------|
+| `AppId` 一旦发布**不能改** | 升级靠它认出「同一个产品」并原地覆盖；改了会变成并存两套、卸载也各管各的 |
+| `DisableDirPage=no` **必须显式写** | 默认值 `auto` 会在「检测到已安装」时隐藏选择目录页，观感就是「这包不让我选目录」（v1.9.3 真实发生） |
+| `[Files]` 必须保留 `recursesubdirs createallsubdirs` | `TerminalAssets\`（xterm.js）、`runtimes\`、`zh-Hans\` 一旦被拍平到根目录，**安装版的 SSH 终端直接打不开**（MSI 时代踩过） |
+| `[UninstallDelete]` 只能删 `{app}` 下的运行产物 | **绝对不能碰 `{localappdata}\ServerOpsHelper`** —— 链接、密码箱、访问历史、登录账号都在那儿，卸载一个字都不能动 |
+| `UsePreviousAppDir=yes` 要保留 | 覆盖升级时自动沿用上次装的目录，用户不用每次重选 |
+| `CloseApplications=yes` 要保留 | 程序正在跑时由 Restart Manager 关掉它（有窗口的那种），比让用户自己去关省事 |
+| **主程序那条 `[Files]` 必须排在最后** | Inno 按节内顺序复制。exe 早于 dll 落地的话，智能体连接器的重启守护会在中途把 `--mcp-stdio` 拉起来、映射住 `clrjit.dll`，后面的 dll 覆盖全撞「拒绝访问 5」。见下方「后台进程抢文件」 |
+| **别改成「整个安装目录改名」** | 实测（2026-11-18，Win11/NTFS）进程活着时 `RenameFile` 目录会失败（WinError 5 或 32）；只有**单个文件**能改名。正确顺序是「先改名藏起 exe → 再 taskkill」 |
+
+#### 后台进程抢文件：为什么安装脚本要「先藏 exe 再杀」
+
+智能体客户端（`dsh-mcp-connector` 的 `stdio-startup-guard.js`）会用
+`ServerOpsHelper.exe --mcp-stdio` 常驻一个**无窗口**进程，并且带自动重启：杀掉一个，
+一秒内又拉起一个。它活着时把 `clrjit.dll` / `coreclr.dll` 映射住，安装程序 `DeleteFile`
+覆盖时返回 `ERROR_ACCESS_DENIED(5)`，界面上那句「尝试替换已存在的文件时失败：DeleteFile
+失败；错误代码 5。拒绝访问」就是它 —— **不是权限问题**，属主就是当前用户。
+
+`CloseApplications=yes` 管不到这类进程（Restart Manager 只认有窗口的）。所以 `[Code]` 里：
+
+1. `StashAppExe()` 把主程序改名成 `.stale-<时间戳>` —— 进程活着也能改名，改完原路径就空了，
+   守护的 `CreateProcess` 直接失败，拉不起来；
+2. 再 `taskkill /F`，并轮询 `tasklist` 确认真的退干净（最多 5 秒）；
+3. Inno 开始复制，主程序由最后那条 `[Files]` 落地，dll 早已换完，没有冲突窗口；
+4. 装完清 `.stale-*`；**安装被取消则 `DeinitializeSetup` 把旧 exe 还原** —— 否则用户双击图标
+   会提示找不到文件（这条有专门的用例：`.tools/verify_cancel_restore.py`）。
+
+回归脚本：`.tools/verify_upgrade_with_guard.py` 会起一个和 dsh 一样的重启守护（每 150ms
+拉一次），在它不断拉起的条件下跑覆盖升级，断言装完退出码 0、载荷 270/270、主程序是新版、
+没有 `.stale-*` 残留。
+
+- 默认 `PrivilegesRequired=lowest` → 装到 `%LOCALAPPDATA%\Programs\ServerOpsHelper`，**不弹 UAC**；
+  用管理员账号运行时第一页会多一个「为所有用户安装」（装到 Program Files，需要一次授权）。
+- **支持直接覆盖安装（升级）**，不用先卸载旧版：Inno 按 `AppId` 认产品，同目录原地替换。
+- **旧 MSI/Burn 版迁移**：`[Code]` 里会扫 HKCU/HKLM 的 `Uninstall` 键找旧记录，问一句要不要先卸掉，
+  然后沿用旧目录安装（静默安装默认不迁移，要迁移需显式传 `MIGRATE=1`）。
+  卸载旧 MSI 失败不会中断安装，最多留一条旧记录。
+- 安装与卸载都**不碰数据目录** —— 数据与程序分离是这个项目的硬约定。
+
+> WiX/MSI 那一套（`Package.wxs`、`Bundle.wxs`、`Files.wxs`、`build_installer.py`、`build_bundle.py`）
+> 作为历史保留，**不再参与出包**。里面的坑（ProductCode 必须按版本确定性生成、ICE 校验当门槛、
+> WixStdBA 中文化、`InstallFolder` 不能用 `Type="string"`）都还写在文件注释里，需要回溯时再看。
 
 ### 出包与回归（一条命令）
 
 ```bash
 cd ServerOpsHelper/Installer
-python release_all.py          # 重新发布 → 打 MSI（含 ICE 校验）→ 打 EXE → 打便携 zip → 清中间产物
+python release_all.py          # 重新发布 → 打安装程序 → 装/卸回归 → 打便携 zip → 清中间产物
 ```
 
-失败时完整日志写进 `Installer/build_installer.log`（早期版本只打印过滤后的"好看的行"，
-导致 271 条 ICE 违规被掩盖成"13 秒报成功"，这个坑已经修掉）。
+任何一步失败都会**返回非零并停下**，不会产出半成品：Inno 编译失败会打印完整输出；
+装/卸回归（`Probe/verify_inno_payload.py`）在临时目录里真装真卸，比对「安装出来的相对路径集合」
+与「publish 目录的相对路径集合」—— 不是只比文件总数（MSI 时代两边都是 269 个、路径却错了 17 个），
+同时断言数据目录**一个文件都没动**。本机已安装同产品时该脚本会自动跳过（否则会覆盖真实安装记录）。
 
 验证脚本都在 `Probe/`（用隔离环境
 `~/.workbuddy/binaries/python/envs/default/Scripts/python.exe` 跑）：
 
 | 脚本 | 作用 |
 | --- | --- |
-| `e2e_matrix.py <setup.exe>` | 6 项端到端回归：自选目录装/卸、默认路径装/卸、重装、**数据目录零改动** |
-| `shot_zh_ui.py` | 验证安装程序界面是中文 + 欢迎页有说明文字，出截图到 `Probe/shots/` |
+| `verify_inno_payload.py <setup.exe> [发布目录]` | **出包流程内置的门槛**：临时目录真装真卸 + 路径集合比对 + 数据目录零改动 |
+| `shot_inno_ui.py [安装包]` | 截 Inno 向导的图，确认「中文界面 + 安装路径可见」，产物在 `Probe/shots/inno_*.png` |
+| `e2e_matrix.py` / `shot_zh_ui.py` / `verify_msi_payload.py` / `verify_upgrade.py` | WiX/MSI 时代的回归脚本，保留作历史，**不再用于出包** |
 | `mcp_stdio_smoke.py [exe]` | **真起进程**跑一遍 MCP stdio 会话（协议 / 工具 / 权限 / 密码不外泄 / 审计），25 项；可指向发布版 exe |
 | `Probe/`（C# 项目，`Probe.exe`） | **界面/行为探针，当前 134 项全绿**。它才是这个项目的安全网：XAML 的坑（StaticResource 缺失、图标名非法、pack URI 解析不到）全是编译期全绿、运行期才炸 |
 

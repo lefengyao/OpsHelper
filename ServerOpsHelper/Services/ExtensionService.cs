@@ -869,23 +869,32 @@ public sealed class ExtensionService
         var resolved = Substitute(command, values);
         var timeout = Math.Clamp(command.TimeoutSeconds <= 0 ? 60 : command.TimeoutSeconds, 5, 600);
 
-        // 走既有通道：MarkConnected 与异常包装都在里面，不另起一套
+        // 走既有通道：MarkConnected、连接复用与异常包装都在里面，不另起一套
         var runner = new RemoteExecutionService();
         var work = runner.ExecuteSshCommandAsync(server, resolved, timeout);
 
-        // 外层硬兜底：RemoteExecutionService 只设了连接超时，SSH.NET 的同步 Execute()
-        // 对"命令跑不完"（比如 tail -f）不会自己回来，界面就会一直转圈。
+        // 外层硬兜底：RemoteExecutionService 内部已经有取消，但取消信号偶有"发了不返回"的情况，
+        // 界面就会一直转圈。这里到点就**主动断链**，而不是丢下不管 ——
+        // 丢下不管的旧行为会让那条会话一直占着服务端的槽位，拖累后续所有新建连接。
         var guard = Task.Delay(TimeSpan.FromSeconds(timeout + 10));
         var finished = await Task.WhenAny(work, guard).ConfigureAwait(false);
 
         if (finished != work)
         {
+            SshSessionPool.Shared.Discard(server);
+
+            _ = work.ContinueWith(
+                t => _ = t.Exception,
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+
             return new RemoteCommandResult
             {
                 Success = false,
                 ExitCode = -1,
                 Output = string.Empty,
-                Error = $"命令在 {timeout} 秒内没有结束，已放弃等待（界面可继续操作，后台连接会被回收）。"
+                Error = $"命令在 {timeout} 秒内没有结束，已放弃等待并断开这条 SSH 连接。"
             };
         }
 

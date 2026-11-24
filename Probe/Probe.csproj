@@ -11,6 +11,13 @@
     跑法（注意 XML 注释里不能出现连续两个减号，所以参数只写个大概）：
         用 dotbuild 包装器 build 本目录，然后运行 bin/Debug/net9.0-windows/Probe.exe
         （包装器在 ~/.workbuddy/tools/dotbuild.py，详见技能 dotnet-wpf-windows-sandbox）
+
+    SSH 连接池专项验证（连本机假 sshd，不碰生产）：
+        1) .tools/sshprobe-venv 里装好 paramiko（已 gitignore）
+        2) 起 python .tools/fake_sshd.py，端口用默认 2226 那一档
+        3) Probe.exe 加参数 ssh 池检查并跟上端口（参数名见 Program.ArgValue 的调用处）
+        服务端加 reject-first 参数可模拟"前 N 次握手被 sshd 拒绝"（MaxStartups），
+        用来验客户端是否会重试。断言项见 Program.RunSshPoolChecks 的注释。
   -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>

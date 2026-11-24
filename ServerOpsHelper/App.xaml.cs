@@ -109,6 +109,11 @@ public partial class App : Application
     {
         McpRuntime.StopHttp();
 
+        // 复用的 SSH 长连接在这里统一断开：进程退出时 socket 本来也会关，
+        // 但 MCP HTTP 模式下应用可能被"停掉服务却继续开着窗口"，
+        // 留着已认证的会话等于让服务端多占一个槽位。
+        Services.SshSessionPool.Shared.DisposeAll();
+
         // FRP 只在这次会话真的打开过那个页面时才收尾：
         // 不停的话 frpc/frps 会变成没人管的孤儿进程，下次打开界面也看不到它、更停不掉。
         Frp.FrpService.ShutdownIfCreated();

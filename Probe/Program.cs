@@ -82,6 +82,31 @@ internal static class Program
             return RenderFrpShots();
         }
 
+        // SSH 连接池验证：连本机假 sshd（.tools/fake_sshd.py），验"复用一条连接 + 握手重试 + 超时断链"。
+        // 必须显式给端口才会跑：主探针不依赖外部进程，默认跳过。
+        var sshPort = ArgValue(args, "--ssh-pool-check");
+        if (sshPort != null)
+        {
+            try
+            {
+                return RunSshPoolChecks(int.Parse(sshPort));
+            }
+            finally
+            {
+                try
+                {
+                    if (Directory.Exists(IsolatedConfigDir))
+                    {
+                        Directory.Delete(IsolatedConfigDir, true);
+                    }
+                }
+                catch (Exception)
+                {
+                    // 清理失败不影响结论
+                }
+            }
+        }
+
         if (string.Equals(
                 Path.GetFullPath(IsolatedConfigDir),
                 Path.GetFullPath(real),
@@ -2699,4 +2724,172 @@ internal static class Program
 
     private static string Truncate(string text, int max)
         => text.Length <= max ? text : text[..max] + "…";
+
+    // ───────────────────────── 七、SSH 连接池（可选，需本机假 sshd） ─────────────────────────
+
+    private static string? ArgValue(string[] args, string name)
+    {
+        var index = Array.IndexOf(args, name);
+        return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
+    }
+
+    /// <summary>
+    /// SSH 连接池验证。用真实 SSH 协议打本机假服务端（<c>.tools/fake_sshd.py</c>），
+    /// 不碰任何生产机器与真实配置目录。
+    /// <para>
+    /// 断言四件事：
+    /// ① 连续 20 条命令全部成功；
+    /// ② 服务端只看到 1 次 TCP 连接（旧的"每条命令新建连接"这里是 20 次）；
+    /// ③ 4 条并发命令都能拿到正确结果（池内串行化不丢命令）；
+    /// ④ 命令超时后连接被摘掉、下一条命令自动重建成功（不会永久坏掉）。
+    /// </para>
+    /// <para>
+    /// 跑法：<c>Probe.exe --ssh-pool-check 2222</c>（先起 fake_sshd.py）。
+    /// </para>
+    /// </summary>
+    private static int RunSshPoolChecks(int port)
+    {
+        // 主线程是 STA，这里要等一堆 Task；丢到线程池上跑，避免任何同步上下文干扰
+        return Task.Run(() => RunSshPoolChecksCore(port)).GetAwaiter().GetResult();
+    }
+
+    private static int RunSshPoolChecksCore(int port)
+    {
+        Log($"── 七、SSH 连接池（127.0.0.1:{port}） ──");
+
+        var server = new ServerInfo
+        {
+            Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            Name = "probe-sshd",
+            Host = "127.0.0.1",
+            Port = port,
+            Username = "admin",
+            Password = "probe-pass",
+            OsType = ServerOsType.Linux
+        };
+
+        File.WriteAllText(
+            Path.Combine(IsolatedConfigDir, "servers.json"),
+            System.Text.Json.JsonSerializer.Serialize(new[] { server }),
+            Encoding.UTF8);
+
+        SetMcpAllowWrite(true);
+
+        var core = new McpServerCore();
+        var started = System.Diagnostics.Stopwatch.StartNew();
+
+        var failed = 0;
+        for (var i = 1; i <= 20; i++)
+        {
+            var expected = "hello-" + i;
+            var (isError, payload) = ExecRaw(core, "echo " + expected, 10, 100 + i);
+            var output = payload?["stdout"]?.GetValue<string>()?.Trim();
+
+            if (isError || output != expected)
+            {
+                failed++;
+                Log($"    第 {i} 条：isError={isError} stdout={output ?? "(null)"}");
+            }
+        }
+
+        started.Stop();
+
+        Check("连续 20 条命令全部成功", () => failed == 0, $"{failed} 条失败");
+        Log($"    20 条命令总耗时 {started.ElapsedMilliseconds} ms（平均 {started.ElapsedMilliseconds / 20.0:0.0} ms/条）");
+
+        Check("20 条命令只握手 1 次（连接被复用）",
+            () => SshSessionPool.Shared.LiveConnectionCount == 1,
+            $"池中活连接 {SshSessionPool.Shared.LiveConnectionCount} 条（期望 1）");
+
+        // 并发：4 条命令同时进来。池里只有一条连接，靠 SemaphoreSlim 串行化，
+        // 结果不能串味、也不能有命令被吞掉。
+        var concurrentBad = 0;
+        var concurrentTasks = new List<Task>();
+        for (var i = 1; i <= 4; i++)
+        {
+            var n = i;
+            concurrentTasks.Add(Task.Run(() =>
+            {
+                var (isError, payload) = ExecRaw(core, "echo par-" + n, 10, 200 + n);
+                var output = payload?["stdout"]?.GetValue<string>()?.Trim();
+                if (isError || output != "par-" + n)
+                {
+                    Interlocked.Increment(ref concurrentBad);
+                }
+            }));
+        }
+
+        Task.WaitAll(concurrentTasks.ToArray());
+        Check("4 条并发命令结果互不串味", () => concurrentBad == 0, $"{concurrentBad} 条失败");
+
+        // 超时：1 秒 timeout 跑 sleep 5，应该 1 秒出头就返回 timedOut，而不是等满 5 秒
+        var timeoutWatch = System.Diagnostics.Stopwatch.StartNew();
+        var (timeoutIsError, timeoutPayload) = ExecRaw(core, "sleep 5", 1, 300);
+        timeoutWatch.Stop();
+
+        var timedOut = timeoutPayload?["timedOut"]?.GetValue<bool>() == true;
+        Check("超时命令被中断而不是挂死",
+            () => timedOut && timeoutWatch.Elapsed.TotalSeconds < 8,
+            $"timedOut={timedOut}，耗时 {timeoutWatch.Elapsed.TotalSeconds:0.0}s");
+
+        Check("超时不会把工具调用本身变成 isError",
+            () => !timeoutIsError,
+            "isError=true（超时应当作为数据返回，模型才能判断要不要重试）");
+
+        // 自愈：超时会把那条连接摘掉，下一条命令必须重新握手并成功
+        var (afterIsError, afterPayload) = ExecRaw(core, "echo after-timeout", 10, 301);
+        Check("超时断开后下一条命令自动重建连接",
+            () => !afterIsError && afterPayload?["stdout"]?.GetValue<string>()?.Trim() == "after-timeout",
+            $"isError={afterIsError} stdout={afterPayload?["stdout"]}");
+
+        Log(_failures == 0 ? "── SSH 连接池检查通过 ──" : $"── SSH 连接池有 {_failures} 项失败 ──");
+
+        var path = Path.Combine(Path.GetTempPath(), "probe_result.log");
+        File.WriteAllText(path, string.Join(Environment.NewLine, Lines), Encoding.UTF8);
+        Console.WriteLine(_failures == 0 ? "=== PROBE OK ===" : $"=== {_failures} PROBE FAILED ===");
+        return _failures == 0 ? 0 : 1;
+    }
+
+    /// <summary>通过真实的 MCP tools/call 走一遍 exec_command（和智能体调用的是同一条路径）。</summary>
+    private static (bool IsError, JsonObject? Payload) ExecRaw(
+        McpServerCore core,
+        string command,
+        int timeoutSeconds,
+        int id)
+    {
+        var response = Rpc(core, "tools/call", new JsonObject
+        {
+            ["name"] = "exec_command",
+            ["arguments"] = new JsonObject
+            {
+                ["server"] = "probe-sshd",
+                ["command"] = command,
+                ["timeoutSeconds"] = timeoutSeconds
+            }
+        }, id);
+
+        var result = response?["result"];
+        var isError = result?["isError"]?.GetValue<bool>() == true;
+        var text = result?["content"]?[0]?["text"]?.GetValue<string>();
+
+        JsonObject? payload = null;
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            try
+            {
+                payload = JsonNode.Parse(text) as JsonObject;
+            }
+            catch (Exception)
+            {
+                // 不是 JSON 就说明是错误文本，调用方按 payload=null 处理
+            }
+        }
+
+        if (isError)
+        {
+            Log($"    [tool error] {text}");
+        }
+
+        return (isError, payload);
+    }
 }
