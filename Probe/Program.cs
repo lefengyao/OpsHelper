@@ -16,6 +16,7 @@ using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Text.Json.Nodes;
 using System.Threading;
+using Microsoft.Web.WebView2.Core;
 using System.Windows.Threading;
 using ServerOpsHelper;
 using ServerOpsHelper.Frp;
@@ -80,6 +81,12 @@ internal static class Program
         if (args.Contains("--shot-frp"))
         {
             return RenderFrpShots();
+        }
+
+        // 复现「启动后第一次打开网页白屏」：完全照 MainWindow 的真实调用顺序走一遍
+        if (args.Contains("--web-first-open"))
+        {
+            return RunWebFirstOpenCheck(args.Contains("--pending-path"));
         }
 
         // SSH 连接池验证：连本机假 sshd（.tools/fake_sshd.py），验"复用一条连接 + 握手重试 + 超时断链"。
@@ -330,6 +337,345 @@ internal static class Program
     }
 
     // ───────────────────────── 二、界面行为（跑真实消息循环）─────────────────────────
+
+    // ───────────────────── 首次打开白屏复现（--web-first-open）─────────────────────
+
+    /// <summary>
+    /// 复现「每次启动应用第一次打开网页始终白屏」。
+    /// <para>
+    /// 刻意**照抄 MainWindow 的真实时序**，而不是像 RunConsoleChecks 那样直接 OpenUrl：
+    /// 1) 页面先以 Collapsed 放进窗口（== MainWindow.xaml 里 ConsoleHost 的初始状态）；
+    /// 2) 切到 Web 控制台：Visibility=Visible → ActivateAsync() 火后不管 → 紧接着 OpenUrl()。
+    /// 这中间的竞态正是白屏的嫌疑点，所以必须这么跑。
+    /// </para>
+    /// <para>
+    /// 判定用的是页面里的真实内容（ExecuteScriptAsync 读 innerText），
+    /// 不是"控件存在"——控件存在但没渲染正是白屏的定义。
+    /// </para>
+    /// </summary>
+    private static int RunWebFirstOpenCheck(bool pendingFirst)
+    {
+        // WebView2 的 WPF 包装要求 Application.Current 存在且事件循环已起（它内部会检查）。
+        // 不建 App 的话会抛 "cannot be used before the application's event loop has started running"，
+        // 那是探针自己的假象，不是被测代码的问题。
+        if (Application.Current is null)
+        {
+            var app = new App();
+            app.InitializeComponent();
+        }
+
+        Application.Current!.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var url = $"http://127.0.0.1:{port}/";
+        var acceptLoop = Task.Run(() => ServeProbePageAsync(listener));
+
+        Log($"[web-first-open] 本地测试页 {url}");
+
+        var dispatcher = Dispatcher.CurrentDispatcher;
+        var timeline = new List<string>();
+        var started = DateTime.Now;
+        Window? window = null;
+        WebConsolePage? page = null;
+        DispatcherTimer? timer = null;
+        var tick = 0;
+
+        try
+        {
+            page = new WebConsolePage { Visibility = Visibility.Collapsed };
+            window = new Window
+            {
+                Width = 1120,
+                Height = 700,
+                Left = 80,
+                Top = 80,
+                ShowInTaskbar = false,
+                WindowStyle = WindowStyle.ToolWindow,
+                Content = page,
+            };
+
+            window.Show();
+            window.UpdateLayout();
+            timeline.Add($"+0ms 窗口已显示，ConsoleHost 初始 Collapsed（模拟启动后默认停在服务器页）");
+
+            // —— 真实时序：ShowPage("WebConsole") + OpenLink ——
+            // ⚠️ 真正的点击一定发生在消息循环里：必须在 Dispatcher.Run() 之后触发，
+            // 否则 SynchronizationContext 还没安装，await 的后续会落到线程池线程上，
+            // WebView2 会以 "event loop has not started" 拒绝初始化 —— 那是探针假象。
+            var host = window;
+            var console = page;
+
+            var kick = new DispatcherTimer(DispatcherPriority.Background, dispatcher)
+            {
+                Interval = TimeSpan.FromMilliseconds(400),
+            };
+
+            kick.Tick += (_, _) =>
+            {
+                kick.Stop();
+
+                console.Visibility = Visibility.Visible;
+                host.UpdateLayout();
+
+                if (pendingFirst)
+                {
+                    // 慢初始化路径（用户机器上真实发生的顺序）：
+                    // 环境还没建好就先要求打开 —— 靠的是"待办 + 就绪后自动补做并显示"。
+                    console.OpenUrl(url);
+                    var activate = console.ActivateAsync();
+                    timeline.Add($"+{Elapsed(started)}ms 先 OpenUrl（此时环境未就绪）再 ActivateAsync —— 走 pending 路径");
+                    _ = activate;
+                }
+                else
+                {
+                    var activate = console.ActivateAsync();   // MainWindow 里也是 `_ = ConsoleHost.ActivateAsync()`
+                    console.OpenUrl(url);
+                    timeline.Add($"+{Elapsed(started)}ms 切到 Web 控制台并立刻 OpenUrl（ActivateAsync 未 await）");
+                    _ = activate;
+                }
+
+                timer!.Start();
+            };
+
+            timer = new DispatcherTimer(DispatcherPriority.Background, dispatcher) { Interval = TimeSpan.FromSeconds(1) };
+
+            timer.Tick += async (_, _) =>
+            {
+                tick++;
+                var snapshot = DescribeWebViews(console);
+                var body = await TryReadPageAsync(console);
+                var visible = IsViewReallyVisible(console, out var geometry);
+
+                timeline.Add($"+{Elapsed(started)}ms [{tick}s] {snapshot} · 页面={body} · 可见性={geometry}");
+
+                if (tick < 12)
+                {
+                    return;
+                }
+
+                timer.Stop();
+
+                // 白屏的定义：内容可能已经加载了，但控件 Collapsed / 0 尺寸 —— 用户就是什么都看不到。
+                // 所以两个条件都要满足才算通过。
+                var ok = body.Contains("OK-FIRST-OPEN", StringComparison.Ordinal) && visible;
+                if (ok)
+                {
+                    Log("OK   首次打开就有真实内容且控件已显示（未复现白屏）");
+                }
+                else
+                {
+                    Fail(
+                        "首次打开白屏",
+                        $"12 秒后仍未正常显示：内容标记={body.Contains("OK-FIRST-OPEN", StringComparison.Ordinal)}，"
+                        + $"可见={geometry}；最后状态：{snapshot} / {body}");
+                }
+
+                Log("       —— 时间线 ——");
+                foreach (var line in timeline)
+                {
+                    Log("       " + line);
+                }
+
+                try { host.Close(); } catch (Exception) { }
+                dispatcher.InvokeShutdown();
+            };
+
+            kick.Start();
+            Dispatcher.Run();
+        }
+        catch (Exception ex)
+        {
+            Fail("首次打开复现流程异常", $"{ex.GetType().Name}: {ex.Message}");
+            try { window?.Close(); } catch (Exception) { }
+            try { dispatcher.InvokeShutdown(); } catch (Exception) { }
+        }
+        finally
+        {
+            try { listener.Stop(); } catch (Exception) { }
+            try { acceptLoop.Wait(TimeSpan.FromSeconds(1)); } catch (Exception) { }
+
+            Log(_failures == 0 ? "=== WEB FIRST OPEN OK ===" : $"=== {_failures} WEB FIRST OPEN FAILED ===");
+            File.WriteAllText(ProbeLogPath, string.Join(Environment.NewLine, Lines), Encoding.UTF8);
+            Console.WriteLine($"结果已写入 {ProbeLogPath}");
+        }
+
+        return _failures == 0 ? 0 : 1;
+    }
+
+    private static string Elapsed(DateTime started)
+        => ((int)(DateTime.Now - started).TotalMilliseconds).ToString();
+
+    /// <summary>
+    /// 第一个标签的控件是否**真的**显示出来了（可见 + 有尺寸）。
+    /// 白屏的典型状态是 Visibility=Collapsed 且 0×0：页面加载了，但用户看不到。
+    /// </summary>
+    private static bool IsViewReallyVisible(WebConsolePage page, out string geometry)
+    {
+        var views = typeof(WebConsolePage)
+            .GetField("_views", BindingFlags.Instance | BindingFlags.NonPublic)?
+            .GetValue(page) as IDictionary;
+
+        geometry = "(无实例)";
+        if (views == null || views.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (DictionaryEntry entry in views)
+        {
+            var wrapper = entry.Value!;
+            var view = wrapper.GetType().GetProperty("View")!.GetValue(wrapper) as FrameworkElement;
+            if (view == null)
+            {
+                continue;
+            }
+
+            geometry = $"vis={view.Visibility},w={view.ActualWidth:F0},h={view.ActualHeight:F0}";
+            return view.Visibility == Visibility.Visible
+                   && view.ActualWidth > 1
+                   && view.ActualHeight > 1;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 把 WebView2 容器与每个标签实例的状态压成一行，用于看「到底卡在哪一步」
+    /// </summary>
+    private static string DescribeWebViews(WebConsolePage page)
+    {
+        var type = typeof(WebConsolePage);
+        var host = Field<Grid>(page, "WebViewHost");
+        var env = type.GetField("_environment", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(page);
+        var ready = type.GetField("_environmentReady", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(page);
+        var pending = type.GetField("_pendingTab", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(page);
+        var views = type.GetField("_views", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(page) as IDictionary;
+
+        var parts = new List<string>
+        {
+            $"env={(env != null ? "有" : "无")}",
+            $"ready={ready}",
+            $"pending={(pending != null ? "有" : "无")}",
+            $"children={host?.Children.Count ?? -1}",
+            $"views={views?.Count ?? -1}",
+            $"status=\"{Field<TextBlock>(page, "StatusTextBlock")?.Text}\"",
+        };
+
+        if (views != null)
+        {
+            foreach (DictionaryEntry entry in views)
+            {
+                var wrapper = entry.Value!;
+                var view = wrapper.GetType().GetProperty("View")!.GetValue(wrapper) as FrameworkElement;
+                var core = wrapper.GetType().GetProperty("Core")!.GetValue(wrapper);
+                var failed = wrapper.GetType().GetProperty("ProcessFailed")!.GetValue(wrapper);
+
+                parts.Add(
+                    $"view[vis={view?.Visibility},w={view?.ActualWidth:F0},h={view?.ActualHeight:F0},"
+                    + $"core={(core != null ? "有" : "无")},failed={failed}]");
+            }
+        }
+
+        return string.Join(" ", parts);
+    }
+
+    /// <summary>
+    /// 读页面真实内容（白屏 == body 是空的）
+    /// </summary>
+    private static async Task<string> TryReadPageAsync(WebConsolePage page)
+    {
+        var views = typeof(WebConsolePage)
+            .GetField("_views", BindingFlags.Instance | BindingFlags.NonPublic)?
+            .GetValue(page) as IDictionary;
+
+        if (views == null || views.Count == 0)
+        {
+            return "(没有 WebView2 实例)";
+        }
+
+        foreach (DictionaryEntry entry in views)
+        {
+            var wrapper = entry.Value!;
+            var core = wrapper.GetType().GetProperty("Core")!.GetValue(wrapper) as CoreWebView2;
+            if (core == null)
+            {
+                continue;
+            }
+
+            try
+            {
+                var raw = await core.ExecuteScriptAsync(
+                    "JSON.stringify({"
+                    + "ready:document.readyState,"
+                    + "title:document.title,"
+                    + "len:(document.body?document.body.innerText:'').length,"
+                    + "text:(document.body?document.body.innerText:'').slice(0,40)"
+                    + "})");
+
+                return raw;
+            }
+            catch (Exception ex)
+            {
+                return $"(读页面失败：{ex.GetType().Name}: {ex.Message})";
+            }
+        }
+
+        return "(Core 还是 null)";
+    }
+
+    /// <summary>
+    /// 极简本地 HTTP 服务：只回一个带标记的页面，避免探针依赖外网
+    /// </summary>
+    private static async Task ServeProbePageAsync(TcpListener listener)
+    {
+        var html = "<!doctype html><html><head><meta charset='utf-8'><title>PROBE-FIRST-OPEN</title></head>"
+                   + "<body style='background:#123;color:#fff'><h1 id='m'>OK-FIRST-OPEN</h1></body></html>";
+        var bytes = Encoding.UTF8.GetBytes(html);
+
+        while (true)
+        {
+            TcpClient client;
+            try
+            {
+                client = await listener.AcceptTcpClientAsync();
+            }
+            catch (Exception)
+            {
+                return; // listener 已停
+            }
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var c = client;
+                    using var stream = c.GetStream();
+                    var buffer = new byte[2048];
+                    var read = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    if (read <= 0)
+                    {
+                        return;
+                    }
+
+                    var head = Encoding.ASCII.GetBytes(
+                        "HTTP/1.1 200 OK\r\n"
+                        + "Content-Type: text/html; charset=utf-8\r\n"
+                        + $"Content-Length: {bytes.Length}\r\n"
+                        + "Connection: close\r\n\r\n");
+
+                    await stream.WriteAsync(head);
+                    await stream.WriteAsync(bytes);
+                    await stream.FlushAsync();
+                }
+                catch (Exception)
+                {
+                    // 客户端提前断开无所谓
+                }
+            });
+        }
+    }
 
     private static void RunConsoleChecks()
     {

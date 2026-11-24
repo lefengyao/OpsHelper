@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
@@ -375,18 +376,87 @@ public partial class WebConsolePage : UserControl
         // 放到 WebView2 初始化之后的话，初始化一慢列表就跟着一直空白
         await LoadRecentAsync();
 
-        if (!_environmentReady)
+        if (!await WaitForEnvironmentAsync())
+        {
+            return;
+        }
+
+        await FlushPendingAsync();
+    }
+
+    /// <summary>
+    /// 正在创建 WebView2 环境的任务。
+    /// <para>
+    /// 缓存成一个字段是必须的：环境创建慢的时候（用户 profile 大、装了扩展、首次冷启动），
+    /// 切页 / 点链接 / 点刷新会几乎同时进来，各建一个环境等于多个实例抢同一个 userDataFolder，
+    /// 轻则慢，重则互相锁死、浏览器进程起不来。同一时刻只能有一个创建任务。
+    /// </para>
+    /// </summary>
+    private Task? _environmentInitTask;
+
+    /// <summary>
+    /// 拿到（必要时创建）环境创建任务：已就绪直接返回已完成任务。
+    /// </summary>
+    private Task EnsureEnvironmentAsync()
+    {
+        if (_environmentReady)
+        {
+            return Task.CompletedTask;
+        }
+
+        // 上一次创建已经结束却没成功（运行时缺失、目录被锁）：允许重试。
+        // 不重置的话会一直拿到那个已完成的失败任务，本次运行再也打不开网页。
+        if (_environmentInitTask is { IsCompleted: true })
+        {
+            _environmentInitTask = null;
+        }
+
+        return _environmentInitTask ??= InitializeWebView2Async();
+    }
+
+    /// <summary>
+    /// 等环境就绪，最多等 10 秒；超时不阻塞用户，改为后台等它完成再自动补做挂起的导航。
+    /// </summary>
+    /// <returns>是否已就绪</returns>
+    private async Task<bool> WaitForEnvironmentAsync()
+    {
+        var init = EnsureEnvironmentAsync();
+
+        if (!init.IsCompleted)
         {
             // WebView2 环境创建偶发会卡住（运行时缺失、浏览器进程起不来），
             // 给个上限，超时就明说，不要让人对着空页面干等
-            var initTask = InitializeWebView2Async();
-            if (await Task.WhenAny(initTask, Task.Delay(TimeSpan.FromSeconds(10))) != initTask)
+            if (await Task.WhenAny(init, Task.Delay(TimeSpan.FromSeconds(10))) != init)
             {
                 StatusTextBlock.Text = "内置浏览器初始化超时。请确认已安装 WebView2 Runtime，或点「打开」重试。";
-                return;
-            }
 
-            await initTask;
+                // 初始化并没有放弃：它跑完后仍然要把挂起的网址打开，
+                // 否则超时那一刻起 pending 就再也没人消费 —— 这正是"首次打开一直白屏"的成因。
+                _ = init.ContinueWith(
+                    _ => Dispatcher.BeginInvoke(new Action(() => _ = FlushPendingAsync())),
+                    TaskScheduler.Default);
+
+                return false;
+            }
+        }
+
+        await init;
+        return _environmentReady;
+    }
+
+    /// <summary>
+    /// 环境就绪后，把"等环境时记下的那个标签"真正建出来并**显示**。
+    /// <para>
+    /// ⚠️ 这里必须调用 <see cref="ShowOnlyView"/>：<see cref="EnsureViewAsync"/> 创建的控件
+    /// 初始是 Collapsed，只有显示出来才会渲染。漏掉这一步的表现就是——
+    /// 标签栏有了、状态栏写着"正在打开"，网页区域永远白屏，换个页面再回来才恢复。
+    /// </para>
+    /// </summary>
+    private async Task FlushPendingAsync()
+    {
+        if (!_environmentReady)
+        {
+            return;
         }
 
         if (_pendingTab is not { } pending)
@@ -395,7 +465,11 @@ public partial class WebConsolePage : UserControl
         }
 
         _pendingTab = null;
-        await EnsureViewAsync(pending);
+
+        if (await EnsureViewAsync(pending))
+        {
+            ShowOnlyView(pending);
+        }
     }
 
     /// <summary>
@@ -532,9 +606,17 @@ public partial class WebConsolePage : UserControl
 
         if (!_environmentReady)
         {
-            // WebView2 环境还没建起来（本页第一次真正可见时才会建），先记下来
+            // WebView2 环境还没建起来（本页第一次真正可见时才会建），先记下来。
+            // 记完要主动推进：这条路径未必有 ActivateAsync 在旁边等着，
+            // 只记不推的话 pending 会永久悬挂 —— 表现就是第一次打开永远白屏。
             _pendingTab = tab;
             StatusTextBlock.Text = $"正在准备内置浏览器，稍后打开 {tab.Url}";
+
+            if (await WaitForEnvironmentAsync())
+            {
+                await FlushPendingAsync();
+            }
+
             return;
         }
 
@@ -596,6 +678,13 @@ public partial class WebConsolePage : UserControl
 
         try
         {
+            // 刚切到本页时布局可能还没跑完（此时控件尺寸为 0）。
+            // WebView2 在零尺寸下初始化会失败，代码里等一轮 Loaded 级布局再建。
+            if (!view.IsLoaded || view.ActualWidth < 1 || view.ActualHeight < 1)
+            {
+                await Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.Loaded);
+            }
+
             await view.EnsureCoreWebView2Async(_environment);
             var core = view.CoreWebView2;
             wrapper.Core = core;
@@ -620,7 +709,18 @@ public partial class WebConsolePage : UserControl
         }
         catch (Exception ex)
         {
-            wrapper.ProcessFailed = true;
+            WriteBrowserLog(
+                $"标签初始化失败（{tab.DisplayTitle}）："
+                + $"host={WebViewHost.ActualWidth:F0}×{WebViewHost.ActualHeight:F0}，"
+                + $"view={view.ActualWidth:F0}×{view.ActualHeight:F0}，vis={view.Visibility}",
+                ex);
+
+            // 不留半成品：失败的实例从容器里撤掉并释放，
+            // 否则它会一直占着 z 序（Collapsed 不绘制，但句柄和实例还在），下次还得先判失败再重建。
+            _views.Remove(tab);
+            WebViewHost.Children.Remove(view);
+            try { view.Dispose(); } catch (Exception) { /* 初始化失败的控件释放可能再抛，忽略 */ }
+
             StatusTextBlock.Text = $"打开「{tab.DisplayTitle}」失败：{ex.Message}";
             return false;
         }
@@ -733,7 +833,13 @@ public partial class WebConsolePage : UserControl
         if (!_environmentReady)
         {
             _pendingTab = tab;
-            StatusTextBlock.Text = "WebView2 尚未就绪，请稍候重试。";
+            StatusTextBlock.Text = "WebView2 尚未就绪，正在准备，稍后自动打开。";
+
+            if (await WaitForEnvironmentAsync())
+            {
+                await FlushPendingAsync();
+            }
+
             return;
         }
 
@@ -1133,7 +1239,35 @@ public partial class WebConsolePage : UserControl
         }
         catch (Exception ex)
         {
+            // 允许下次重试：环境创建失败不该让本次运行从此彻底用不了内置浏览器
+            _environmentInitTask = null;
             StatusTextBlock.Text = $"WebView2 初始化失败：{ex.Message}（请确认已安装 WebView2 Runtime）";
+            WriteBrowserLog("环境创建失败", ex);
+        }
+    }
+
+    /// <summary>
+    /// 内置浏览器的诊断日志（和崩溃日志同目录）。
+    /// <para>
+    /// 白屏这种问题光看状态栏不够 —— 用户一操作提示就变了，事后完全无从查起。
+    /// 这里只记关键失败（环境创建 / 单标签初始化 / 进程崩溃），不记正常导航，避免刷屏。
+    /// </para>
+    /// </summary>
+    private static void WriteBrowserLog(string category, Exception? ex)
+    {
+        try
+        {
+            var dir = Path.Combine(ConfigService.Instance.ConfigDirectory, "logs");
+            Directory.CreateDirectory(dir);
+
+            File.AppendAllText(
+                Path.Combine(dir, "webview2.log"),
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {category}\n{ex?.ToString() ?? "(无异常对象)"}\n\n",
+                Encoding.UTF8);
+        }
+        catch (Exception)
+        {
+            // 日志失败不能反过来影响打开网页
         }
     }
 

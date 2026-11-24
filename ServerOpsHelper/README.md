@@ -477,7 +477,7 @@ python release_all.py          # 重新发布 → 打安装程序 → 装/卸回
 | `shot_inno_ui.py [安装包]` | 截 Inno 向导的图，确认「中文界面 + 安装路径可见」，产物在 `Probe/shots/inno_*.png` |
 | `e2e_matrix.py` / `shot_zh_ui.py` / `verify_msi_payload.py` / `verify_upgrade.py` | WiX/MSI 时代的回归脚本，保留作历史，**不再用于出包** |
 | `mcp_stdio_smoke.py [exe]` | **真起进程**跑一遍 MCP stdio 会话（协议 / 工具 / 权限 / 密码不外泄 / 审计），25 项；可指向发布版 exe |
-| `Probe/`（C# 项目，`Probe.exe`） | **界面/行为探针，当前 134 项全绿**。它才是这个项目的安全网：XAML 的坑（StaticResource 缺失、图标名非法、pack URI 解析不到）全是编译期全绿、运行期才炸 |
+| `Probe/`（C# 项目，`Probe.exe`） | **界面/行为探针，当前 239 项全绿**。它才是这个项目的安全网：XAML 的坑（StaticResource 缺失、图标名非法、pack URI 解析不到）全是编译期全绿、运行期才炸 |
 
 探针里与本轮修复直接相关的几组检查（都写在 `Probe/Program.cs`）：
 
@@ -490,6 +490,17 @@ python release_all.py          # 重新发布 → 打安装程序 → 装/卸回
   （含中文、空密码、引号/反斜杠/换行等特殊字符）。
 - `RunRealVaultReadOnlyDiagnosis` —— 只读诊断真实密码箱**只报成败不打印明文**，
   用来确认 DPAPI 密文能否被当前 Windows 账户解开。
+
+**首次打开白屏专项**（`Probe.exe --web-first-open [--pending-path]`）：
+
+- 照 `MainWindow` 的真实时序起一个窗口：页面先以 `Collapsed` 放进去（= 启动后停在服务器页），
+  再「切到 Web 控制台 + 立刻打开网址」，然后每秒钟记录一次控件可见性、尺寸、Core 状态、页面内容。
+- 判定必须**同时**满足「页面有内容」和「控件 Visible 且尺寸 > 0」。只看内容会漏掉真正的白屏 ——
+  页面其实早加载好了，只是控件一直是 `Collapsed / 0×0`。
+- `--pending-path` 走的是慢初始化那条路（环境没就绪就先要求打开），
+  修复前它 12 秒后仍是 `vis=Collapsed,w=0,h=0`，修复后 1 秒内可见。
+- 这类"用户什么都看不到"的问题，状态栏提示会随着后续操作被覆盖，
+  所以真实失败原因还会追加到数据目录的 `logs/webview2.log`（环境创建 / 单标签初始化 / 进程崩溃）。
 
 > **做界面/行为改动后，务必"注入验证"一次**：把修复撤掉重跑，确认对应检查真的报 FAIL。
 > 2026-09-25 就这么做过：撤掉两处修复后 12 项 FAIL、恢复后 76 项全 OK ——
