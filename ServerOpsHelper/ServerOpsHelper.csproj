@@ -50,6 +50,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- 开源协议：跟着 build / publish 一起出去（便携包与安装包里都能看到）。
+         仓库根目录的这份是唯一副本，这里用 Link 让它以 LICENSE 的名字落到输出目录根。 -->
+    <None Include="..\LICENSE"
+          Link="LICENSE"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- SSH 终端的前端资源（xterm.js + fit 插件 + 页面），跟着 build / publish 一起出去。
          WebView2 用虚拟主机名 terminal.appassets.local 映射到这个目录加载，
          全部本地文件、离线可用 —— 不引 CDN，桌面软件不能假设有网。 -->

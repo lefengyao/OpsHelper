@@ -700,3 +700,13 @@ python release_all.py          # 重新发布 → 打安装程序 → 装/卸回
 - [ ] 操作审计日志
 - [ ] 双因素认证（2FA）
 - [ ] 密码箱主密码 + 自动锁屏
+
+## 开源协议
+
+本项目采用 **MIT License**，全文见仓库根目录的 [`LICENSE`](../LICENSE)。
+
+可以自由使用、修改、分发（含商业用途），只需保留版权声明与许可声明。
+
+第三方组件各自遵循自己的许可：ModernWpfUI（MIT）、SSH.NET（MIT）、Tomlyn（MIT）、
+xterm.js（MIT）、Microsoft.Web.WebView2（微软 WebView2 SDK 许可）。
+
